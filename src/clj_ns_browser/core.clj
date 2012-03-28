@@ -59,7 +59,7 @@
 
 (defn new-root-frm [] (frame :title "Clojure Namespace Browser"))
 
-(defn new-browser-form [] (identify (clj_ns_fn_browser.BrowserForm.)))
+(defn new-browser-form [] (identify (clj_ns_browser.BrowserForm.)))
 
 (when-not (var? ss/*root-frm*)
   (ss/set-root-frm! (new-root-frm))

@@ -1,4 +1,4 @@
-package clj_ns_fn_browser;
+package clj_ns_browser;
 
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;

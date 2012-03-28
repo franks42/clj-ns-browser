@@ -1,33 +1,14 @@
 # clj-ns-browser
 
-FIXME: write description
+Smalltalk-like namespace/class/var/function browser for clojure based on seesaw.
 
 ## Usage
 
-:ns-header-lbl
-:vars-header-lbl
-:doc-header-lbl
-:ns-publics-cb
-:ns-aliases-cb
-:ns-loaded-cb
-:ns-unloaded-cb
-:ns-interns-cb
-:ns-imports-cb
-:ns-map-cb
-:doc-rb
-:ns-filter-tf
-:vars-filter-tf
-:doc-header-lbl
-:ns-lb
-:vars-lb
-:doc-ta
-:ns-entries-lbl
-:ns-require-btn
-:vars-entries-lbl
-:source-rb
-:value-rb
-:ns-refers-cb
+Not yet fully baked... pls wait another week...
 
+If you *have* to take a look now, close the repo, built with "lein deps" and "lein compile", and start your repl with "lein repl", and start the browser thru evaluating: (refresh)
+
+(however, it may not even run on your environment yet... patience...)
 
 ## License
 
