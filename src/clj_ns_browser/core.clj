@@ -10,7 +10,8 @@
   (:require [clj-ns-browser.seesaw :as ss]
             [seesaw.selector]
             [seesaw.bind :as b]
-            [clojure.java.javadoc])
+            [clojure.java.javadoc]
+            [clojure.repl])
   ;(:use clj-ns-browser.seesaw)
   ;(:use [seesaw.core :exclude [config config! select]])
   (:use [clj-ns-browser.browser]

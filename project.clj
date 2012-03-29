@@ -3,7 +3,8 @@
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [seesaw "1.4.0"]
                  [clj-info "0.2.1"]
-                 [hiccup "0.3.8"]]
+                 [hiccup "0.3.8"]
+                 [lein-repls "1.9.7"]]
  	:dev-dependencies [[lein-marginalia "0.6.0"]
  	                   [codox "0.5.0"]]
   :java-source-path "src"
