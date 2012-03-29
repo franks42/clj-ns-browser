@@ -6,11 +6,19 @@ Smalltalk-like namespace/class/var/function browser for clojure based on seesaw.
 
 Not yet fully baked... pls wait another week...
 
-If you *have* to take a look now, clone the repo, built with "lein deps" and "lein compile", and start your repl with "lein repl", and start the browser by evaluating in the repl: (refresh).
+If you *have* to take a look now:
+* clone the repo
+* built with "lein deps"
+* you have to "lein compile"
+* start your repl with "lein repl"
+* start the browser by evaluating in the repl: (sdoc).
 
-If (refresh) brings up the browser, then probably (sdoc map) in the repl will bring up the docs for clojure.core/map in the browser.
+Instead of cloning, you can download the tar file and work with that.
 
-(however, it may not even run on your environment yet... patience...)
+Seems to work ok on MacOSX... tested the download, install, run on a fresh account.
+
+Works a little bit on Lubuntu - browsing works, but for some unknown reason the unloaded ns don't show up there (?))
+
 
 ## License
 
