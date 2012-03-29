@@ -4,7 +4,9 @@
                  [seesaw "1.4.0"]
                  [clj-info "0.2.1"]
                  [hiccup "0.3.8"]
-                 [lein-repls "1.9.7"]]
+                 [lein-repls "1.9.7"]
+                 [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
+                 [org.thnetos/cd-client "0.3.2"]]
  	:dev-dependencies [[lein-marginalia "0.6.0"]
  	                   [codox "0.5.0"]]
   :java-source-path "src"

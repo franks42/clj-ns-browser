@@ -9,6 +9,7 @@
 (ns clj-ns-browser.utils
   (:require cljsh.completion)
   (:require clojure.set)
+  (:require cd-client.core)
   (:use seesaw.core)
   (:use [clojure.pprint :only [pprint]])
   (:use [clj-info.doc2txt :only [doc2txt]])
@@ -33,12 +34,6 @@
   "Returns a sorted set of the name-strings of all loaded/required namespaces."
   []
   (apply sorted-set (map str (all-ns))))
-
-
-(defn all-ns-loaded-with-sf
-  "Returns a sorted set of the name-strings of all loaded/required namespaces."
-  []
-  (apply sorted-set (concat (map str (all-ns)) [" *** Special Forms ***"])))
 
 
 (defn all-ns-unloaded
@@ -124,6 +119,33 @@
 
 (defn no-nils [coll] (filter #(not (nil? %)) coll))
 
+
+(defn render-examples-text
+  "Obtain and return example string from clojuredoc for fqn"
+  [fqn]
+  (let [name-str (name (symbol fqn))
+        ns-str (namespace (symbol fqn))]
+    (if ns-str
+      (if-let [example-str (with-out-str
+                             (cd-client.core/pr-examples-core ns-str name-str))]
+        example-str
+        (str "Sorry no examples available from clojuredoc for: " fqn))
+      (str "Sorry, not a fully qualified clojure name: " fqn))))
+
+
+(defn render-comments-text
+  "Obtain and return comments string from clojuredoc for fqn"
+  [fqn]
+  (let [name-str (name (symbol fqn))
+        ns-str (namespace (symbol fqn))]
+    (if ns-str
+      (if-let [comments-str (with-out-str
+                             (cd-client.core/pr-comments-core ns-str name-str))]
+        comments-str
+        (str "Sorry no comments available from clojuredoc for: " fqn))
+      (str "Sorry, not a fully qualified clojure name: " fqn))))
+
+
 (defn render-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt]
@@ -141,6 +163,9 @@
           source-str
           (str "Sorry - no source code available for " fqn))
       (= doc-opt "Examples")
-          (str "Sorry - no examples available for " fqn)
+          (render-examples-text fqn)
+      (= doc-opt "Comments")
+          (render-comments-text fqn)
       (= doc-opt "Value")
           (str "Sorry - no value available for " fqn))))
+

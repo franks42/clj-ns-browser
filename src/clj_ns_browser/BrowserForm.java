@@ -65,7 +65,7 @@ public class BrowserForm extends JPanel {
 		
 		JComboBox comboBox_2 = new JComboBox();
 		comboBox_2.setName("doc-cbx");
-		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"Doc", "Examples", "Source", "Value"}));
+		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"Doc", "Examples", "Comments", "Source", "Value"}));
 		add(comboBox_2, "cell 5 1");
 		
 		txtNsFilter = new JTextField();
@@ -147,6 +147,14 @@ public class BrowserForm extends JPanel {
 		lblvarsentries.setName("vars-entries-lbl");
 		lblvarsentries.setFont(new Font("Inconsolata", Font.BOLD, 12));
 		add(lblvarsentries, "cell 3 4,alignx left");
+		
+		JButton btnEdit = new JButton("Edit");
+		btnEdit.setName("edit-btn");
+		add(btnEdit, "flowx,cell 5 4,alignx right");
+		
+		JButton btnBrowse = new JButton("Browse");
+		btnBrowse.setName("browse-btn");
+		add(btnBrowse, "cell 5 4,alignx right");
 
 	}
 }

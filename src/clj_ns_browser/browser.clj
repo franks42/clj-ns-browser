@@ -116,6 +116,8 @@
   (ss/config! :vars-lb :model [])
   (ss/config! :ns-entries-lbl :text "0")
   (ss/config! :ns-require-btn :enabled? false)
+  (ss/config! :edit-btn :enabled? false)
+  (ss/config! :browse-btn :enabled? false)
   (listen (ss/select :ns-require-btn)
     :action (fn [event] (swap! ns-require-btn-atom #(not %))))
   ;; vars
@@ -256,7 +258,7 @@
   (b/bind
     ; As the text of the fqn text field changes ...
     (ss/funnel [(ss/select :doc-tf)
-                (b/selection (ss/select :doc-cbx))])
+                (ss/select :doc-cbx)])
     (b/transform #(render-doc-text (first %) (ss/selection :doc-cbx)))
     (b/notify-soon)
     (b/property (ss/select :doc-ta) :text))
