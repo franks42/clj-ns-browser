@@ -2,7 +2,9 @@
   :description "Smalltalk-like namespace/class/var/function browser."
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [seesaw "1.4.0"]
-                 [clj-info "0.1.0"]
+                 [clj-info "0.2.1"]
                  [hiccup "0.3.8"]]
+ 	:dev-dependencies [[lein-marginalia "0.6.0"]
+ 	                   [codox "0.5.0"]]
   :java-source-path "src"
   :main clj-ns-browser.core)

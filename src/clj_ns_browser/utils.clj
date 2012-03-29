@@ -125,7 +125,7 @@
 (defn no-nils [coll] (filter #(not (nil? %)) coll))
 
 (defn render-doc-text
-  ""
+  "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt]
   (when-not (or (nil? fqn) (= fqn ""))
     (cond

@@ -18,14 +18,15 @@
 
 (defn set-root-frm!
   "Set the clj-ns-browser.seesaw/*root-frm* to passed root.
-  Convenience function to set variable across namespaces."
+  Convenience function to set variable across namespaces easily.
+  (don't use this fn, but use (binding ss/*root-frm* ...) instead!)"
   [root]
   (def ^:dynamic *root-frm* root))
 
 
 (defn get-root-frm
   "Returns clj-ns-browser.seesaw/*root-frm*.
-  Convenience function to get variable across namespaces."
+  Convenience function to get variable across namespaces easily."
   []
   *root-frm*)
 
@@ -36,6 +37,8 @@
   otherwise selector is seesaw's selector's type."
   ([selector] (select *root-frm* selector))
   ([root selector]
+    (when-not root (throw (Exception.
+      "seesaw/select: *root-frm* is nil - should assign explicitly or in (binding...)")))
     (if (keyword? selector)
       (seesaw.core/select root
                           [(keyword (str "#" (clojure.core/name selector)))])
@@ -114,12 +117,25 @@
   (apply seesaw.bind/funnel (flatten bindables)))
 
 
-(defn all-ids
-  ""
-  ([] (all-ids (get-root-frm)))
+;; Copied from seesaw example to generate :id's from externally build GUIs.
+(defn identify
+  "Given a root widget, find all the named widgets and set their Seesaw :id
+   so they can play nicely with select and everything."
+  [root]
+  (doseq [w (select root [:*])]
+    (when-let [n (.getName w)]
+      (seesaw.selector/id-of! w (keyword n))))
+  root)
+
+
+(defn get-all-id-values
+  "Return list of all :id values given a (root-)widget.
+  Facilitates introspection of WindowBuilder widgets. "
+  ([] (get-all-id-values (get-root-frm)))
   ([root]
     (sort
       (filter #(not(nil? %))
               (map
-                (fn [o] (try (seesaw.core/config o :id) (catch Exception e)))
+                (fn [o] (try (seesaw.core/config o :id)
+                        (catch Exception e)))
                 (seesaw.core/select root [:*]))))))
