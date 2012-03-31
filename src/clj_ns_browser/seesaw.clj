@@ -10,6 +10,7 @@
   "Set of convenience functions to make seesaw even more friendly"
   (:require seesaw.core)
   (:require seesaw.bind)
+  (:require clojure.pprint)
 )
 
 
@@ -128,10 +129,10 @@
   root)
 
 
-(defn get-all-id-values
+(defn all-id-values
   "Return list of all :id values given a (root-)widget.
   Facilitates introspection of WindowBuilder widgets. "
-  ([] (get-all-id-values (get-root-frm)))
+  ([] (all-id-values (get-root-frm)))
   ([root]
     (sort
       (filter #(not(nil? %))
@@ -139,3 +140,8 @@
                 (fn [o] (try (seesaw.core/config o :id)
                         (catch Exception e)))
                 (seesaw.core/select root [:*]))))))
+
+
+(defn bind-debug
+  ([o] (clojure.pprint/pprint o) o)
+  ([o t] (print t ":") (clojure.pprint/pprint o) o))

@@ -10,6 +10,8 @@
   (:require [clj-ns-browser.seesaw :as ss]
             [seesaw.selector]
             [seesaw.bind :as b]
+            [clojure.java.browse]
+            [clojure.java.shell]
             [clojure.java.javadoc])
   ;(:use clj-ns-browser.seesaw)
   ;(:use [seesaw.core :exclude [config config! select]])
@@ -82,6 +84,8 @@
 (def all-ns-loaded-atom (atom nil))
 (def all-ns-unloaded-atom (atom nil))
 (def ns-require-btn-atom (atom true))
+(def browse-btn-atom (atom true))
+(def edit-btn-atom (atom true))
 
 (def ns-cbx-value-list ["loaded" "unloaded"])
 (defn ns-loaded [] @all-ns-loaded-atom)
@@ -120,6 +124,10 @@
   (ss/config! :browse-btn :enabled? false)
   (listen (ss/select :ns-require-btn)
     :action (fn [event] (swap! ns-require-btn-atom #(not %))))
+  (listen (ss/select :browse-btn)
+    :action (fn [event] (swap! browse-btn-atom #(not %))))
+  (listen (ss/select :edit-btn)
+    :action (fn [event] (swap! edit-btn-atom #(not %))))
   ;; vars
   (ss/config! :vars-entries-lbl :text "0")
   ; doc
@@ -257,9 +265,10 @@
   ;; new render-doc-text in doc-ta
   (b/bind
     ; As the text of the fqn text field changes ...
-    (ss/funnel [(ss/select :doc-tf)
-                (ss/select :doc-cbx)])
-    (b/transform #(render-doc-text (first %) (ss/selection :doc-cbx)))
+    (ss/funnel [(ss/select :doc-tf) (ss/select :doc-cbx)])
+    (b/filter (fn [o] (not (or (nil? (first o)) (= "" (first o))
+                               (nil? (second o))(= "" (second o))))))
+    (b/transform #(render-doc-text (first %) (second %)))
     (b/notify-soon)
     (b/property (ss/select :doc-ta) :text))
   ;;
@@ -268,8 +277,56 @@
     (ss/select :doc-ta)
     (b/notify-later)
     (b/transform (fn [t] (scroll! (ss/select :doc-ta) :to :top))))
+  ;;
+  ;; new text in doc-ta => dis/enable browser button
+  (b/bind
+    (ss/select :doc-ta)
+    (b/transform (fn [o] (ss/selection :doc-cbx)))
+    (b/transform (fn [o]
+      (if (= "Doc" o)
+        true
+        (if (or (= "Examples" o)(= "Comments" o))
+          (if-let [fqn (ss/config :doc-tf :text)]
+            (if-let [url (clojuredocs-url fqn)]
+              true))))))
+    (b/notify-soon)
+    (b/property (ss/select :browse-btn) :enabled?))
   ;
-  )
+  (b/bind
+    (ss/funnel [(ss/select :doc-tf) (ss/select :doc-cbx)])
+    (b/transform (fn [o] (ss/selection :doc-cbx)))
+    (b/transform (fn [o] (if (= "Source" o) true false)))
+    (b/transform (fn [o]
+      (when o (if (meta-when-file (ss/config :doc-tf :text))
+                true
+                false))))
+    (b/notify-soon)
+    (b/property (ss/select :edit-btn) :enabled?))
+  ;
+    ;; require-btn pressed =>
+  ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
+  (b/bind
+    browse-btn-atom
+    (b/notify-soon)
+    (b/transform (fn [& oo]
+      (let [o (ss/selection :doc-cbx)]
+        (when-let [fqn (ss/config :doc-tf :text)]
+          (cond
+            (= "Doc" o) (bdoc* fqn)
+            (or (= "Examples" o)(= "Comments" o))
+              (when-let [url (clojuredocs-url fqn)]
+                (clojure.java.browse/browse-url url))))))))
+  ;;
+  ;; edit-btn pressed =>
+  ;; if we find a local file (not inside jar), then send to $EDITOR.
+  (b/bind
+    edit-btn-atom
+    (b/transform (fn [& o]
+      (when-let [m (meta-when-file (ss/config :doc-tf :text))]
+        (when-let [e (:out (clojure.java.shell/sh "bash" "-c" (str "echo -n $EDITOR")))]
+          (:exit (clojure.java.shell/sh "bash" "-c" (str e " +" (:line m) " " (:file m)))))))))
+  ;;
+  ) ; end of bind-all
 
 
 ;; (binding [ss/*root-frm* (ss/get-root-frm)]

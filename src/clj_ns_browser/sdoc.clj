@@ -31,32 +31,34 @@
   ([] (sdoc* (str *ns*) "sdoc"))
   ([a-name] (sdoc* (str *ns*) a-name))
   ([a-ns a-name]
-  (binding [ss/*root-frm* (clj-ns-browser.browser/get-browser-root-frm)]
-    (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
-      (let [sym1 (symbol fqn)
-            name1 (name sym1)
-            ns1 (try (namespace sym1)(catch Exception e))]
-        (if ns1
-          ;; we have a fq-var as a-ns/a-name
-          (do
-            (invoke-soon (ss/selection! :ns-lb ns1))
-            (invoke-soon (ss/selection! :vars-lb name1)))
-          (if (find-ns (symbol name1))
-            ;; should be namespace
+    (binding [ss/*root-frm* (clj-ns-browser.browser/get-browser-root-frm)]
+      (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
+        (let [sym1 (symbol fqn)
+              name1 (name sym1)
+              ns1 (try (namespace sym1)(catch Exception e))]
+          (if ns1
+            ;; we have a fq-var as a-ns/a-name
             (do
-              (invoke-soon (ss/selection! :ns-lb name1))
-              )
-            ;; else must be class
-            (do
-              (invoke-soon (ss/selection! :ns-lb (str *ns*)))
-              ;; find right entry in ns-maps for name1...
-              ;;clj-ns-browser.core=> (some (fn [kv] (when (= (.getName (val kv)) "java.lang.Enum")(key kv)))(ns-imports *ns*))
-              ;;Enum
+              (invoke-soon (ss/selection! :ns-lb ns1))
+              (invoke-soon (ss/selection! :vars-lb name1))
+              (invoke-soon (ss/selection! :doc-cbx "Doc")))
+            (if (find-ns (symbol name1))
+              ;; should be namespace
+              (do
+                (invoke-soon (ss/selection! :ns-lb name1))
+                (invoke-soon (ss/selection! :doc-cbx "Doc")))
+              ;; else must be class
+              (do
+                (invoke-soon (ss/selection! :ns-lb (str *ns*)))
+                (invoke-soon (ss/selection! :doc-cbx "Doc")))
+                ;; find right entry in ns-maps for name1...
+                ;;clj-ns-browser.core=> (some (fn [kv] (when (= (.getName (val kv)) "java.lang.Enum")(key kv)))(ns-imports *ns*))
+                ;;Enum
 
-              )))
-        (invoke-later (show! (pack! ss/*root-frm*)))
-        (println fqn))
-      (println "Sorry, no info for give name: " a-name)))))
+                ))
+          (invoke-later (show! (pack! ss/*root-frm*)))
+          (println fqn))
+        (println "Sorry, no info for give name: " a-name)))))
 
 
 (defmacro sdoc

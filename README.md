@@ -4,6 +4,11 @@ Smalltalk-like namespace/class/var/function browser for clojure based on seesaw.
 
 ## Usage
 
+Added browser-button that will bring-up your favorite browser with the associated clojuredoc page.
+
+Added edit-button that will bring up your $EDITOR with the selected FQN's source file+line
+(only works with the project's local files, not with the code in the jar-files).
+
 Added Examples/Comments to Documentation choice-list, which will pull-down info from clojuredocs with cd-client for the selected fqn.
 
 

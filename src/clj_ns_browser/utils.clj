@@ -10,6 +10,7 @@
   (:require cljsh.completion)
   (:require clojure.set)
   (:require cd-client.core)
+  (:require clojure.java.shell)
   (:use seesaw.core)
   (:use [clojure.pprint :only [pprint]])
   (:use [clj-info.doc2txt :only [doc2txt]])
@@ -83,6 +84,23 @@
                       (.getName v-n))))))))))))
 
 
+(defn ns-name-class-str
+  "Given a FQN, return the namespace and name in a list as separate strings.
+  clojure.core/map => [\"clojure.core\" \"map\"]
+  clojure.core => [\"clojure.core\" nil]
+  clojure.lang.Var => [nil \"clojure.lang.Var\"]
+  any error returns nil."
+  [fqn]
+  (when-let [fqn-sym (and fqn (= (type fqn) java.lang.String) (symbol fqn))]
+    (let [n-str (name fqn-sym)
+          ns-str (namespace fqn-sym)]
+      (if ns-str
+        [ns-str n-str]
+        (if (find-ns (symbol n-str))
+          [n-str nil]
+          [nil n-str])))))
+
+
 (defn resolve-fqname
   "Returns the resolved fully qualified name fqn (string) or nil."
   [fqn]
@@ -149,7 +167,7 @@
 (defn render-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt]
-  (when-not (or (nil? fqn) (= fqn ""))
+  (when-not (or (nil? fqn) (= fqn "")(nil? doc-opt))
     (cond
       (= doc-opt "Doc")
         (let [m (doc2txt fqn)
@@ -168,4 +186,27 @@
           (render-comments-text fqn)
       (= doc-opt "Value")
           (str "Sorry - no value available for " fqn))))
+
+
+(defn clojuredocs-url
+  "Returns the clojuredoc url for given FQN"
+  [fqn]
+  (let [r (ns-name-class-str fqn)]
+    (when (and (first r)(second r))
+      (:url (cd-client.core/examples (first r) (second r))))))
+
+(defn meta-when-file
+  "Returns the path to the source file for fqn,
+  or nil if none applies."
+  [fqn]
+  (let [fqn-sym (symbol fqn)]
+    (when-let [v (and (namespace fqn-sym) (find-ns (symbol (namespace fqn-sym))) (find-var fqn-sym))]
+      (when-let [m (meta v)]
+        (when-let [f (:file m)]
+          (if (= (first f) \/)
+            m ;; absolute path is good
+            (let [p (str "src/" f)] ;; assume we start from project-dir
+              ;; check for file existence of p
+              (when (= 0 (:exit (clojure.java.shell/sh "bash" "-c" (str "[ -f " p " ]"))))
+                (assoc m :file p)))))))))
 
