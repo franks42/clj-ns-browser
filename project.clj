@@ -2,7 +2,7 @@
   :description "Smalltalk-like namespace/class/var/function browser."
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [seesaw "1.4.0"]
-                 [clj-info "0.2.1"]
+                 [clj-info "0.2.2"]
                  [hiccup "0.3.8"]
                  [lein-repls "1.9.7"]
                  [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
