@@ -8,10 +8,9 @@
 
 (ns clj-ns-browser.seesaw
   "Set of convenience functions to make seesaw even more friendly"
-  (:require seesaw.core)
-  (:require seesaw.bind)
-  (:require clojure.pprint)
-)
+  (:require [seesaw.core]
+            [seesaw.bind]
+            [clojure.pprint]))
 
 
 ;; the default (seesaw-swing) tree-root for select-searches.

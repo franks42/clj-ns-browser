@@ -13,8 +13,6 @@
             [clojure.java.browse]
             [clojure.java.shell]
             [clojure.java.javadoc])
-  ;(:use clj-ns-browser.seesaw)
-  ;(:use [seesaw.core :exclude [config config! select]])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
         [seesaw.border]
@@ -123,11 +121,11 @@
   (ss/config! :edit-btn :enabled? false)
   (ss/config! :browse-btn :enabled? false)
   (listen (ss/select :ns-require-btn)
-    :action (fn [event] (swap! ns-require-btn-atom #(not %))))
+    :action (fn [event] (swap! ns-require-btn-atom not)))
   (listen (ss/select :browse-btn)
-    :action (fn [event] (swap! browse-btn-atom #(not %))))
+    :action (fn [event] (swap! browse-btn-atom not)))
   (listen (ss/select :edit-btn)
-    :action (fn [event] (swap! edit-btn-atom #(not %))))
+    :action (fn [event] (swap! edit-btn-atom not)))
   ;; vars
   (ss/config! :vars-entries-lbl :text "0")
   ; doc
@@ -145,6 +143,7 @@
 
 
 (defn bind-all
+  "Collection of all the bind-statements that wire the clj-ns-browser events and widgets. (pretty amazing how easy it is to express those dependency-graphs!)"
   []
   ;; # of entries in ns-lb => ns-entries-lbl
   (b/bind
@@ -197,7 +196,7 @@
     (b/transform (fn [v]
       (if v
         (let [fqn (fqname (ss/selection :ns-lb) v)]
-          (if (and fqn (not (= fqn "")))
+          (if (and fqn (not= fqn ""))
             fqn
             (when (= (ss/selection :vars-cbx) "aliases")
               (when-let [n (get (ns-aliases (symbol (ss/selection :ns-lb))) (symbol v))]
@@ -329,18 +328,14 @@
   ) ; end of bind-all
 
 
-;; (binding [ss/*root-frm* (ss/get-root-frm)]
-;;   (init-before-bind)
-;;   (bind-all)
-;;   (init-after-bind))
-;;
 (defn init-browser-root
-  ""
+  "Initializes the browser frame with all its widgets."
   [root]
   (binding [ss/*root-frm* root]
     (init-before-bind)
     (bind-all)
     (init-after-bind)))
 
+;; start-up & initialize a browser frame
 (init-browser-root (get-browser-root-frm))
 (ss/set-root-frm! (get-browser-root-frm))

@@ -15,9 +15,9 @@
             [clj-ns-browser.browser])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
-        [seesaw.border]
-        [seesaw.mig]
-        [seesaw.dev]
+;;         [seesaw.border]
+;;         [seesaw.mig]
+;;         [seesaw.dev]
         [clj-info]
         [clj-info.doc2txt :only [doc2txt]]
         [clj-info.doc2html :only [doc2html]]))

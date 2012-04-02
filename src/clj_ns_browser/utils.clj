@@ -7,14 +7,14 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.utils
-  (:require cljsh.completion)
-  (:require clojure.set)
-  (:require cd-client.core)
-  (:require clojure.java.shell)
-  (:use seesaw.core)
-  (:use [clojure.pprint :only [pprint]])
-  (:use [clj-info.doc2txt :only [doc2txt]])
-  (:use [clj-info.doc2html :only [doc2html]]))
+  (:require [cljsh.completion]
+            [clojure.set]
+            [cd-client.core]
+            [clojure.java.shell])
+  (:use [seesaw.core]
+        [clojure.pprint :only [pprint]]
+        [clj-info.doc2txt :only [doc2txt]]
+        [clj-info.doc2html :only [doc2html]]))
 
 (def special-forms
   (sort (map name '[def if do let quote var fn loop recur throw try monitor-enter monitor-exit dot new set!])))
@@ -104,7 +104,7 @@
 (defn resolve-fqname
   "Returns the resolved fully qualified name fqn (string) or nil."
   [fqn]
-  (when (and (string? fqn) (not (= fqn "")))
+  (when (and (string? fqn) (not= fqn ""))
     (if-let [ns (find-ns (symbol fqn))]
       ns
       (when-let [var-or-class (try (resolve *ns* (symbol fqn))(catch Exception e))]
@@ -207,6 +207,6 @@
             m ;; absolute path is good
             (let [p (str "src/" f)] ;; assume we start from project-dir
               ;; check for file existence of p
-              (when (= 0 (:exit (clojure.java.shell/sh "bash" "-c" (str "[ -f " p " ]"))))
+              (when (zero? (:exit (clojure.java.shell/sh "bash" "-c" (str "[ -f " p " ]"))))
                 (assoc m :file p)))))))))
 
