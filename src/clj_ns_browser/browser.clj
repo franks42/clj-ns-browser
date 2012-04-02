@@ -267,9 +267,11 @@
     (ss/funnel [(ss/select :doc-tf) (ss/select :doc-cbx)])
     (b/filter (fn [o] (not (or (nil? (first o)) (= "" (first o))
                                (nil? (second o))(= "" (second o))))))
-    (b/transform #(render-doc-text (first %) (second %)))
-    (b/notify-soon)
-    (b/property (ss/select :doc-ta) :text))
+    (b/transform
+      (fn [o]
+        (future
+          (let [s (render-doc-text (first o) (second o))]
+            (invoke-soon (ss/config! :doc-ta :text s)))))))
   ;;
   ;; new text in doc-ta => scroll to top
   (b/bind
@@ -283,13 +285,14 @@
     (b/transform (fn [o] (ss/selection :doc-cbx)))
     (b/transform (fn [o]
       (if (= "Doc" o)
-        true
-        (if (or (= "Examples" o)(= "Comments" o))
-          (if-let [fqn (ss/config :doc-tf :text)]
-            (if-let [url (clojuredocs-url fqn)]
-              true))))))
-    (b/notify-soon)
-    (b/property (ss/select :browse-btn) :enabled?))
+        (invoke-soon (ss/config! :browse-btn :enabled? true))
+          (if (or (= "Examples" o)(= "Comments" o))
+            (if-let [fqn (ss/config :doc-tf :text)]
+              (future
+                (let [url (clojuredocs-url fqn)
+                      r (if url true false)]
+                  (invoke-soon
+                    (ss/config! :browse-btn :enabled? r))))))))))
   ;
   (b/bind
     (ss/funnel [(ss/select :doc-tf) (ss/select :doc-cbx)])
@@ -302,28 +305,30 @@
     (b/notify-soon)
     (b/property (ss/select :edit-btn) :enabled?))
   ;
-    ;; require-btn pressed =>
-  ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
+    ;; browser-btn pressed =>
+  ;; bring up browser with url
   (b/bind
     browse-btn-atom
     (b/notify-soon)
     (b/transform (fn [& oo]
       (let [o (ss/selection :doc-cbx)]
         (when-let [fqn (ss/config :doc-tf :text)]
-          (cond
-            (= "Doc" o) (bdoc* fqn)
-            (or (= "Examples" o)(= "Comments" o))
-              (when-let [url (clojuredocs-url fqn)]
-                (clojure.java.browse/browse-url url))))))))
+          (future
+            (cond
+              (= "Doc" o) (bdoc* fqn)
+              (or (= "Examples" o)(= "Comments" o))
+                (when-let [url (clojuredocs-url fqn)]
+                  (clojure.java.browse/browse-url url)))))))))
   ;;
   ;; edit-btn pressed =>
   ;; if we find a local file (not inside jar), then send to $EDITOR.
   (b/bind
     edit-btn-atom
     (b/transform (fn [& o]
-      (when-let [m (meta-when-file (ss/config :doc-tf :text))]
-        (when-let [e (:out (clojure.java.shell/sh "bash" "-c" (str "echo -n $EDITOR")))]
-          (:exit (clojure.java.shell/sh "bash" "-c" (str e " +" (:line m) " " (:file m)))))))))
+      (future
+        (when-let [m (meta-when-file (ss/config :doc-tf :text))]
+          (when-let [e (:out (clojure.java.shell/sh "bash" "-c" (str "echo -n $EDITOR")))]
+            (:exit (clojure.java.shell/sh "bash" "-c" (str e " +" (:line m) " " (:file m))))))))))
   ;;
   ) ; end of bind-all
 
