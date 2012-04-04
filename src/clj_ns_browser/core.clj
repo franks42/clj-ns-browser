@@ -7,24 +7,12 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.core
-  (:require [clj-ns-browser.seesaw :as ss]
-            [seesaw.selector]
-            [seesaw.bind :as b]
-            [clojure.java.javadoc]
-            [clojure.repl])
-  ;(:use clj-ns-browser.seesaw)
-  ;(:use [seesaw.core :exclude [config config! select]])
   (:use [clj-ns-browser.browser]
-        [clj-ns-browser.utils]
         [clj-ns-browser.sdoc]
         [seesaw.core]
-        [seesaw.border]
-        [seesaw.mig]
         [seesaw.dev]
         [clj-info]))
 
 
-(defn -main [& args])
-
-(init-browser-root (get-browser-root-frm))
-(ss/set-root-frm! (get-browser-root-frm))
+(defn -main [& args]
+  (get-clj-ns-browser))

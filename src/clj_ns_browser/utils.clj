@@ -63,7 +63,11 @@
   Input n: string, (quoted-)symbol, var, or actual class or ns.
         ns: (optional) namespace as ns, symbol or string - default *ns*.
   Output: FQName as string or nil."
-  ([n] (fqname *ns* n))
+  ([n] (cond
+          (keyword? n) (if-let [nsp (namespace n)]
+                         (str nsp "/" (name n))
+                         (name n))
+          :else (fqname *ns* n)))
   ([ns n]
     (let [n-str (str n)
           n-sym (symbol n-str)]
@@ -83,6 +87,10 @@
                       (str (.ns v-n) "/" (.sym v-n))
                       (.getName v-n))))))))))))
 
+(defn fqname-kw
+  "Returns the fqn-string for a keyword (without the ':')"
+  [k]
+  (if-let [n (namespace k)] (str n "/" (name k)) (name k)))
 
 (defn ns-name-class-str
   "Given a FQN, return the namespace and name in a list as separate strings.
@@ -140,8 +148,11 @@
 
 (defn render-examples-text
   "Obtain and return example string from clojuredoc for fqn"
-  [fqn]
-  (let [name-str (name (symbol fqn))
+  [real-fqn]
+  (let [fqn (if (some #(= % real-fqn) special-forms)
+              (str "clojure.core/" real-fqn)
+              real-fqn)
+        name-str (name (symbol fqn))
         ns-str (namespace (symbol fqn))]
     (if ns-str
       (if-let [example-str (with-out-str
@@ -153,8 +164,11 @@
 
 (defn render-comments-text
   "Obtain and return comments string from clojuredoc for fqn"
-  [fqn]
-  (let [name-str (name (symbol fqn))
+  [real-fqn]
+  (let [fqn (if (some #(= % real-fqn) special-forms)
+              (str "clojure.core/" real-fqn)
+              real-fqn)
+        name-str (name (symbol fqn))
         ns-str (namespace (symbol fqn))]
     (if ns-str
       (if-let [comments-str (with-out-str

@@ -11,13 +11,9 @@
   Usage:
   (use 'clj-ns-browser.sdoc) in repl
   (ns... (:use [clj-ns-browser.sdoc])) in file."
-  (:require [clj-ns-browser.seesaw :as ss]
-            [clj-ns-browser.browser])
+  (:require [clj-ns-browser.browser])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
-;;         [seesaw.border]
-;;         [seesaw.mig]
-;;         [seesaw.dev]
         [clj-info]
         [clj-info.doc2txt :only [doc2txt]]
         [clj-info.doc2html :only [doc2html]]))
@@ -31,7 +27,13 @@
   ([] (sdoc* (str *ns*) "sdoc"))
   ([a-name] (sdoc* (str *ns*) a-name))
   ([a-ns a-name]
-    (binding [ss/*root-frm* (clj-ns-browser.browser/get-browser-root-frm)]
+    (let [root (clj-ns-browser.browser/get-clj-ns-browser)
+          {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
+                  edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                  ns-header-lbl ns-lb ns-require-btn root-panel
+                  vars-cbx vars-entries-lbl vars-filter-tf
+                  vars-header-lbl vars-lb]}
+            (group-by-id root)]
       (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
         (let [sym1 (symbol fqn)
               name1 (name sym1)
@@ -39,24 +41,26 @@
           (if ns1
             ;; we have a fq-var as a-ns/a-name
             (do
-              (invoke-soon (ss/selection! :ns-lb ns1))
-              (invoke-soon (ss/selection! :vars-lb name1))
-              (invoke-soon (ss/selection! :doc-cbx "Doc")))
+              (invoke-soon (selection! ns-cbx "loaded"))
+              (invoke-soon (selection! ns-lb ns1))
+              (invoke-soon (selection! vars-cbx "publics"))
+              (invoke-soon (selection! vars-lb name1))
+              (invoke-soon (selection! doc-cbx "Doc")))
             (if (find-ns (symbol name1))
               ;; should be namespace
               (do
-                (invoke-soon (ss/selection! :ns-lb name1))
-                (invoke-soon (ss/selection! :doc-cbx "Doc")))
+                (invoke-soon (selection! ns-lb name1))
+                (invoke-soon (selection! doc-cbx "Doc")))
               ;; else must be class
               (do
-                (invoke-soon (ss/selection! :ns-lb (str *ns*)))
-                (invoke-soon (ss/selection! :doc-cbx "Doc")))
+                (invoke-soon (selection! ns-lb (str *ns*)))
+                (invoke-soon (selection! doc-cbx "Doc")))
                 ;; find right entry in ns-maps for name1...
                 ;;clj-ns-browser.core=> (some (fn [kv] (when (= (.getName (val kv)) "java.lang.Enum")(key kv)))(ns-imports *ns*))
                 ;;Enum
 
                 ))
-          (invoke-later (show! (pack! ss/*root-frm*)))
+          (clj-ns-browser.browser/refresh-clj-ns-browser root)
           (println fqn))
         (println "Sorry, no info for give name: " a-name)))))
 
