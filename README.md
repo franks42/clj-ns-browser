@@ -1,28 +1,40 @@
 # clj-ns-browser
 
-Smalltalk-like namespace/class/var/function browser for clojure based on seesaw.
+Smalltalk-like namespace/class/var/function browser for Clojure's on-line docs, source-code, clojuredocs-examples & comments, based on seesaw.
 
 
 ## Install
 
 * clone the repo or download the tar from "https://github.com/franks42/clj-ns-browser"
-* "lein deps"
-* "lein compile"
-* "lein repl" (or lein repls if you have cljsh&repls installed)
-* evaluate in the repl: (sdoc)
+* cd /project/directory/path/
+* $ lein deps
+* $ lein compile
+* $ lein repl
+* clj-ns-browser.core=> (sdoc)
+
+(it should actually work from any repl - tested with repls, emacs and Sublime Text 2)
 
 
 ## Usage
 
 ### REPL
 
-From within REPL, use macro "sdoc" like you use "doc":
+From within REPL, use macro "sdoc" like you use "doc" but with some more flexibility:
 
-  user > (sdoc map)
+    user > (sdoc map)
+    user > (sdoc 'clojure.core/map)
+    user > (sdoc "replace")
+    user > (sdoc clojure.string/replace)
 
-will bring the browser window into view while showing the docs for clojure.core/map.
+will bring the browser window into view while showing the docs for the requested var.
 
-### Clj-ns-browser app
+You can have multiple browser windows with:
+
+    user > (new-clj-ns-browser)
+
+but only the first browser opened, will "listen" for sdoc requests - the others can only be used for browsing.
+
+### clj-ns-browser app
 
 There are three panes, for namespaces, vars/classes/aliases, and for documentation/source-code/examples.
 
@@ -58,8 +70,6 @@ When you look at the source code of those vars in your local project, then the e
 
 * Window is a bit "jittery" - sometimes rescales window for different content of text-area - gota find out how to stop automatic vertical grow
 
-* Sometimes the button event seem to fire off multiple times for a single click... not sure what to do about that...
-
 * code examples seem to refer to clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser - probably issue in either clojuredocs or cd-client (?)
 
 
@@ -81,6 +91,8 @@ When you look at the source code of those vars in your local project, then the e
 ## Acknowledgment
 
 Seesaw and its main author Dave Ray - fantastic tool and near real-time support on the mailing list!
+
+(Seesaw turns the Horror of Swing into a friendly, well-documented, Clojure library: "https://github.com/daveray/seesaw")
 
 
 ## License
