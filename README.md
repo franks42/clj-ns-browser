@@ -61,12 +61,12 @@ Once you've selected a loaded namespace, the publics, interns, aliases, imports 
 
 Again, the var's textfield allows for filtering of (potentially) long lists of vars/classes with a regex.
 
-Once you've selected a namespace and a var, the documentation panel will show you the fully qualified name and either the documentation, source-code, clojuredocs-examples or -comments.
+Once you've selected a namespace and a var, the documentation panel will show you the fully qualified name and either the documentation, source-code, clojuredocs-examples or -comments, based on the selection of the doc's choice-box.
 
 The documentation information is slightly enhanced compared to the standard (doc...),
 and will show you additional info about protocols, extenders, possible alternative fqn's with the same name but different namespaces, etc.
 
-When you look at the documentation, the browser button allows you to see the same doc-info in you browser.
+When you look at the documentation, the browser button allows you to see the same doc-info in you browser but nicer rendered in color.
 
 When you look at the examples or comments, the browser button will direct you to the associated clojuredocs-page in your browser.
 
@@ -77,18 +77,14 @@ When you look at the source code of those vars in your local project, then the e
 
 ## Issues
 
-* Seems to work ok on MacOSX... tested the download/install/run in a fresh account.
+* Seems to work well on MacOSX... tested the download/install/run in a fresh account. However, works "more than less" a on Lubuntu - browsing works, but for some unknown reason the "unloaded" ns don't show up there (?) - have to dive into the completion code, "stolen" from swank-clojure to see if there are any platform dependencies... (any advice/suggestion is most welcome...)
 
-* Works "more than less" a on Lubuntu - browsing works, but for some unknown reason the "unloaded" ns don't show up there (?) - have to dive into the completion code, "stolen" from swank-clojure to see if there are any platform dependencies...
-
-* Window is a bit "jittery" - sometimes rescales window for different content of text-area - gota find out how to stop automatic vertical grow
+* The browser window is a bit "jittery" - sometimes rescales window for different content of list and text-area - gota find out how to stop automatic growing.
 
 * code examples seem to refer to clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser - probably issue in either clojuredocs or cd-client (?)
 
 
 ## Todo
-
-* allow installation as leiningen plugin or development-dependency - currently only tested as stand-alone, but should be used as a "companion browser tool" for your clojure projects (shouldn't be too difficult...)
 
 * get swing html-text widget to work properly and replace the text-area (looks nicer, will have links working, code-highlighting, etc...) - rendering works in stand-alone browser window, but swing-widget doesn't look very nice...
 
@@ -100,6 +96,7 @@ When you look at the source code of those vars in your local project, then the e
 
 * remove cljsh/repls dependency - cleanup the utility and clj-info
 
+* maybe makes more sense to select on functions/macros/classes than publics/interns/maps - especially for novice users (?)
 
 ## Acknowledgment
 
