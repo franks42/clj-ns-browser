@@ -45,7 +45,7 @@ but only the first browser opened, will "listen" for sdoc requests - the others 
 
 ### clj-ns-browser app
 
-![Clojure Namespace Browser](clj-ns-browser.png "Clojure Namespace Browser")
+![Clojure Namespace Browser](https://github.com/franks42/clj-ns-browser/raw/master/clj-ns-browser.png "Clojure Namespace Browser")
 
 There are three panes, for namespaces, vars/classes/aliases, and for documentation/source-code/examples.
 
@@ -70,7 +70,7 @@ When you look at the documentation, the browser button allows you to see the sam
 
 When you look at the examples or comments, the browser button will direct you to the associated clojuredocs-page in your browser.
 
-![Clojure Namespace Browser](clj-ns-browser-source.png "Clojure Namespace Browser")
+![Clojure Namespace Browser](https://github.com/franks42/clj-ns-browser/raw/master/clj-ns-browser-source.png "Clojure Namespace Browser")
 
 When you look at the source code of those vars in your local project, then the edit-button will bring up your favorite $EDITOR with the file+line-number. (tested with EDITOR=bbedit and EDITOR="emacsclient -n"). (Does not work for source code inside of jar-files...)
 
