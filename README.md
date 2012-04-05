@@ -9,13 +9,15 @@ For any project where you want to add the ability to browse your currently loade
 
 * in your project.clj, add:
 
+```clojure
     :dev-dependencies [[clj-ns-browser "1.0.0"]]
+```
+
+Then:
 
 ```
 $ lein deps
 $ lein repl
-```
-```clojure
 user=> (use 'clj-ns-browser.sdoc)
 user=> (sdoc)
 ```
