@@ -11,6 +11,7 @@
             [seesaw.bind :as b]
             [clojure.java.browse]
             [clojure.java.shell]
+            [seesaw.meta]
             [clojure.java.javadoc])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
@@ -66,7 +67,6 @@
 (def all-ns-unloaded-atom (atom nil))
 (defn ns-loaded [] @all-ns-loaded-atom)
 (defn ns-unloaded [] @all-ns-unloaded-atom)
-(def instance-atom-map (atom {}))
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
 
@@ -91,16 +91,16 @@
   [root]
   (let [atm-map {:ns-require-btn-atom (atom true)
                  :browse-btn-atom (atom true)
-                 :edit-btn-atom (atom true)}]
-    (swap! instance-atom-map (fn [a] (assoc @instance-atom-map root atm-map))))
-  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
+                 :edit-btn-atom (atom true)}
+        {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
                 edit-btn ns-cbx ns-entries-lbl ns-filter-tf
                 ns-header-lbl ns-lb ns-require-btn root-panel
                 vars-cbx vars-entries-lbl vars-filter-tf
                 vars-header-lbl vars-lb]}
           (group-by-id root)
         {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
-          (get @instance-atom-map root)]
+          atm-map]
+    (seesaw.meta/put-meta! root :atom-map atm-map)
     ;; ns
     (config! ns-lb :model @all-ns-loaded-atom)
     (config! vars-lb :model [])
@@ -133,7 +133,7 @@
                 vars-header-lbl vars-lb]}
           (group-by-id root)
         {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
-          (get @instance-atom-map root)]
+          (seesaw.meta/get-meta root :atom-map)]
     (invoke-soon (selection! ns-cbx "loaded"))
     (invoke-soon (selection! vars-cbx "publics"))
     (invoke-soon (selection! doc-cbx "Doc"))))
@@ -149,7 +149,7 @@
                 vars-header-lbl vars-lb]}
           (group-by-id root)
         {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
-          (get @instance-atom-map root)]
+          (seesaw.meta/get-meta root :atom-map)]
     ;; # of entries in ns-lb => ns-entries-lbl
     (b/bind
       (b/property ns-lb :model)
@@ -355,15 +355,16 @@
   "Returns a new browser root frame with an embedded browser form.
   Add new frame to atom-list browser-root-frms"
   []
-  (let [root (frame :title "Clojure Namespace Browser")
-        b-form (identify (clj_ns_browser.BrowserForm.))]
-    (config! root :content b-form)
-    (init-before-bind root)
-    (bind-all root)
-    (init-after-bind root)
-    (swap! browser-root-frms (fn [a] (conj @browser-root-frms root)))
-    (refresh-clj-ns-browser root)
-    root))
+  (invoke-soon
+    (let [root (frame :title "Clojure Namespace Browser")
+          b-form (identify (clj_ns_browser.BrowserForm.))]
+      (config! root :content b-form)
+      (init-before-bind root)
+      (bind-all root)
+      (init-after-bind root)
+      (swap! browser-root-frms (fn [a] (conj @browser-root-frms root)))
+      (refresh-clj-ns-browser root)
+      root)))
 
 
 (defn get-clj-ns-browser
