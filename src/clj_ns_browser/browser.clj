@@ -54,11 +54,12 @@
                             "publics"   ns-publics
                             "refers"    ns-refers
                             "special-forms" ns-special-forms})
-(def doc-cbx-value-list ["Doc" "Examples" "Source" "Value"])
-(def doc-cbx-value-fn-map { "Doc"       'doc-text
-                            "Examples"  'examples-text
-                            "Source"    'source-text
-                            "Value"     'value-text})
+;; These seemed to be unused.
+;;(def doc-cbx-value-list ["All" "Doc" "Examples" "Source" "Value"])
+;;(def doc-cbx-value-fn-map { "Doc"       'doc-text
+;;                            "Examples"  'examples-text
+;;                            "Source"    'source-text
+;;                            "Value"     'value-text})
 
 
 ;; "global" atoms
@@ -289,15 +290,18 @@
       doc-ta
       (b/transform (fn [o] (selection doc-cbx)))
       (b/transform (fn [o]
-        (if (= "Doc" o)
-          (invoke-soon (config! browse-btn :enabled? true))
-            (if (or (= "Examples" o)(= "Comments" o))
-              (if-let [fqn (config doc-tf :text)]
-                (future
-                  (let [url (clojuredocs-url fqn)
-                        r (if url true false)]
-                    (invoke-soon
-                      (config! browse-btn :enabled? r))))))))))
+        (case o
+          "Doc" (invoke-soon (config! browse-btn :enabled? true))
+
+          ("All" "Examples" "See alsos" "Comments")
+          (if-let [fqn (config doc-tf :text)]
+            (future
+              (let [url (clojuredocs-url fqn)
+                    r (if url true false)]
+                (invoke-soon
+                 (config! browse-btn :enabled? r)))))
+
+          nil))))  ; do nothing if no match
     ;
     (b/bind
       (apply b/funnel [doc-tf doc-cbx])
@@ -319,11 +323,14 @@
         (let [o (selection doc-cbx)]
           (when-let [fqn (config doc-tf :text)]
             (future
-              (cond
-                (= "Doc" o) (bdoc* fqn)
-                (or (= "Examples" o)(= "Comments" o))
-                  (when-let [url (clojuredocs-url fqn)]
-                    (clojure.java.browse/browse-url url)))))))))
+              (case o
+                "Doc" (bdoc* fqn)
+
+                ("All" "Examples" "See alsos" "Comments")
+                (when-let [url (clojuredocs-url fqn)]
+                  (clojure.java.browse/browse-url url))
+
+                nil)))))))  ; do nothing if no match
     ;;
     ;; edit-btn pressed =>
     ;; if we find a local file (not inside jar), then send to $EDITOR.
