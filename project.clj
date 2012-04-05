@@ -1,4 +1,4 @@
-(defproject clj-ns-browser "1.1.0-SNAPSHOT"
+(defproject clj-ns-browser "1.1.0"
   :description "Smalltalk-like namespace/class/var/function browser for Clojure."
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [seesaw "1.4.0"]
