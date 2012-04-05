@@ -5,12 +5,21 @@ Smalltalk-like namespace/class/var/function browser for Clojure's on-line docs, 
 
 ## Install
 
-* clone the repo or download the tar from "https://github.com/franks42/clj-ns-browser"
-* cd /project/directory/path/
+For any project where you want to add the ability to browse your currently loaded/unloaded namespaces for the available functions/macros/vars with their docs/source, you should add clj-ns-browser to your :dev-development list:
+
+* in your project.clj, add:
+
+    :dev-dependencies [[clj-ns-browser "1.0.0"]]
+
 * $ lein deps
-* $ lein compile
+
 * $ lein repl
-* clj-ns-browser.core=> (sdoc)
+
+* user=> (use 'clj-ns-browser.sdoc)
+
+* user=> (sdoc)
+
+Very easy!
 
 (it should actually work from any repl - tested with repls, emacs and Sublime Text 2)
 
@@ -19,7 +28,7 @@ Smalltalk-like namespace/class/var/function browser for Clojure's on-line docs, 
 
 ### REPL
 
-From within REPL, use macro "sdoc" like you use "doc" but with some more flexibility:
+From the REPL, use macro "sdoc" like you use "doc" but with some more flexibility:
 
     user > (sdoc map)
     user > (sdoc 'clojure.core/map)
@@ -32,9 +41,11 @@ You can have multiple browser windows with:
 
     user > (new-clj-ns-browser)
 
-but only the first browser opened, will "listen" for sdoc requests - the others can only be used for browsing.
+but only the first browser opened, will "listen" for sdoc requests - the others can only be used for interactive browsing with the mouse.
 
 ### clj-ns-browser app
+
+![Clojure Namespace Browser](clj-ns-browser.png "Clojure Namespace Browser")
 
 There are three panes, for namespaces, vars/classes/aliases, and for documentation/source-code/examples.
 
@@ -58,6 +69,8 @@ and will show you additional info about protocols, extenders, possible alternati
 When you look at the documentation, the browser button allows you to see the same doc-info in you browser.
 
 When you look at the examples or comments, the browser button will direct you to the associated clojuredocs-page in your browser.
+
+![Clojure Namespace Browser](clj-ns-browser-source.png "Clojure Namespace Browser")
 
 When you look at the source code of those vars in your local project, then the edit-button will bring up your favorite $EDITOR with the file+line-number. (tested with EDITOR=bbedit and EDITOR="emacsclient -n"). (Does not work for source code inside of jar-files...)
 

@@ -355,16 +355,15 @@
   "Returns a new browser root frame with an embedded browser form.
   Add new frame to atom-list browser-root-frms"
   []
-  (invoke-soon
-    (let [root (frame :title "Clojure Namespace Browser")
-          b-form (identify (clj_ns_browser.BrowserForm.))]
-      (config! root :content b-form)
-      (init-before-bind root)
-      (bind-all root)
-      (init-after-bind root)
-      (swap! browser-root-frms (fn [a] (conj @browser-root-frms root)))
-      (refresh-clj-ns-browser root)
-      root)))
+  (let [root (frame :title "Clojure Namespace Browser")
+        b-form (identify (clj_ns_browser.BrowserForm.))]
+    (config! root :content b-form)
+    (init-before-bind root)
+    (bind-all root)
+    (init-after-bind root)
+    (swap! browser-root-frms (fn [a] (conj @browser-root-frms root)))
+    (refresh-clj-ns-browser root)
+    root))
 
 
 (defn get-clj-ns-browser
