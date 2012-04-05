@@ -5,23 +5,38 @@ Smalltalk-like namespace/class/var/function browser for Clojure's on-line docs, 
 
 ## Install
 
-For any project where you want to add the ability to browse your currently loaded/unloaded namespaces for the available functions/macros/vars with their docs/source, you should add clj-ns-browser to your :dev-development list:
+For any project where you want to add the ability to browse your currently loaded/unloaded namespaces for the available functions/macros/vars with their docs/source, you should add clj-ns-browser to your :dev-dependencies list:
 
 * in your project.clj, add:
 
+```clojure
     :dev-dependencies [[clj-ns-browser "1.0.0"]]
+```
 
-* $ lein deps
+Then:
 
-* $ lein repl
-
-* user=> (use 'clj-ns-browser.sdoc)
-
-* user=> (sdoc)
+```
+$ lein deps
+$ lein repl
+user=> (use 'clj-ns-browser.sdoc)
+user=> (sdoc)
+```
 
 Very easy!
 
 (it should actually work from any repl - tested with repls, emacs and Sublime Text 2)
+
+If you would like to browse clojuredocs.org examples, see alsos, and comments from a local snapshot rather than the live web site, download this file while on-line:
+
+```clojure
+user=> (spit "cd-snap.txt" (slurp "https://raw.github.com/jafingerhut/cd-client/develop/snapshots/clojuredocs-snapshot-latest.txt"))
+```
+
+ After that you can use this command to read the snapshot data and use it:
+
+```clojure
+user=> (cd-client.core/set-local-mode! "cd-snap.txt")
+```
 
 
 ## Usage
