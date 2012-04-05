@@ -146,60 +146,70 @@
 (defn no-nils [coll] (filter #(not (nil? %)) coll))
 
 
-(defn render-examples-text
-  "Obtain and return example string from clojuredoc for fqn"
-  [real-fqn]
-  (let [fqn (if (some #(= % real-fqn) special-forms)
-              (str "clojure.core/" real-fqn)
-              real-fqn)
-        name-str (name (symbol fqn))
-        ns-str (namespace (symbol fqn))]
-    (if ns-str
-      (if-let [example-str (with-out-str
-                             (cd-client.core/pr-examples-core ns-str name-str))]
-        example-str
-        (str "Sorry no examples available from clojuredoc for: " fqn))
-      (str "Sorry, not a fully qualified clojure name: " fqn))))
+(defn clojuredocs-text
+  [ns-str name-str info-type]
+  (with-out-str
+    (case info-type
+      :examples (cd-client.core/pr-examples-core ns-str name-str)
+      :see-alsos (cd-client.core/pr-see-also-core ns-str name-str)
+      :comments (cd-client.core/pr-comments-core ns-str name-str))))
 
 
-(defn render-comments-text
-  "Obtain and return comments string from clojuredoc for fqn"
-  [real-fqn]
-  (let [fqn (if (some #(= % real-fqn) special-forms)
-              (str "clojure.core/" real-fqn)
-              real-fqn)
-        name-str (name (symbol fqn))
-        ns-str (namespace (symbol fqn))]
-    (if ns-str
-      (if-let [comments-str (with-out-str
-                             (cd-client.core/pr-comments-core ns-str name-str))]
-        comments-str
-        (str "Sorry no comments available from clojuredoc for: " fqn))
-      (str "Sorry, not a fully qualified clojure name: " fqn))))
+(defn render-clojuredocs-text
+  "Obtain and return examples, see alsos, comments, or all as a string
+from clojuredocs for fqn"
+  [real-fqn info-type is-ns?]
+  (if is-ns?
+    (str "Select individual symbols in the namespace to see " (name info-type))
+    (let [fqn (if (some #(= % real-fqn) special-forms)
+                (str "clojure.core/" real-fqn)
+                real-fqn)
+          name-str (name (symbol fqn))
+          ns-str (namespace (symbol fqn))]
+      (if ns-str
+        (if-let [s (clojuredocs-text ns-str name-str info-type)]
+          s
+          (str "Sorry no " (name info-type) " available from clojuredoc for: "
+               fqn))
+        (str "Sorry, not a fully qualified clojure name: " fqn)))))
 
 
 (defn render-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt]
-  (when-not (or (nil? fqn) (= fqn "")(nil? doc-opt))
-    (cond
-      (= doc-opt "Doc")
+  (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt))
+    (let [is-ns? (find-ns (symbol fqn))]
+      (case doc-opt
+        ;; quick to write, if a little inefficient
+        "All" (if is-ns?
+                (str (render-doc-text fqn "Doc") "\n\n"
+                     (render-doc-text fqn "Source"))
+                (str (render-doc-text fqn "Doc") "\n\n"
+                     (render-doc-text fqn "Examples") "\n"
+                     (render-doc-text fqn "See alsos") "\n"
+                     (render-doc-text fqn "Source") "\n\n"
+                     (render-doc-text fqn "Comments") "\n"
+                     (render-doc-text fqn "Value")))
+        "Doc"
         (let [m (doc2txt fqn)
-              ;m (doc2txt (str (selection ns-lb) "/" s))
-              ;m-html (doc2html (str (selection ns-lb) "/" s))
+              ;;m (doc2txt (str (selection ns-lb) "/" s))
+              ;;m-html (doc2html (str (selection ns-lb) "/" s))
               txt (str (:title m) \newline (:message m))]
           txt)
-      (= doc-opt "Source")
-        (if-let [source-str (try (clojure.repl/source-fn (symbol fqn))
-                              (catch Exception e))]
-          source-str
-          (str "Sorry - no source code available for " fqn))
-      (= doc-opt "Examples")
-          (render-examples-text fqn)
-      (= doc-opt "Comments")
-          (render-comments-text fqn)
-      (= doc-opt "Value")
-          (str "Sorry - no value available for " fqn))))
+        
+        "Source"
+        (if is-ns?
+          (str "Select individual symbols in the namespace to see source")
+          (if-let [source-str (try (clojure.repl/source-fn (symbol fqn))
+                                   (catch Exception e))]
+            source-str
+            (str "Sorry - no source code available for " fqn)))
+        
+        "Examples" (render-clojuredocs-text fqn :examples is-ns?)
+        "Comments" (render-clojuredocs-text fqn :comments is-ns?)
+        "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
+        "Value" (str "Sorry - no value available for " fqn)
+        (str "Internal error - clj-ns-browser.utils/render-doc-text got unknown doc-opt='" doc-opt "'")))))
 
 
 (defn clojuredocs-url
