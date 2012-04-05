@@ -107,6 +107,7 @@
     (config! vars-lb :model [])
     (config! ns-entries-lbl :text "0")
     (config! ns-require-btn :enabled? false)
+    (config! doc-cbx :model ["All" "Doc" "Source" "Examples" "Comments" "See alsos" "Value"])
     (config! edit-btn :enabled? false)
     (config! browse-btn :enabled? false)
     (listen ns-require-btn
