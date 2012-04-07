@@ -25,14 +25,9 @@ import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JPopupMenu;
-import java.awt.Component;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import javax.swing.JMenuItem;
-import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JEditorPane;
 
-public class BrowserForm extends JPanel {
+public class BrowserFormHtmlSplit extends JPanel {
 	private JTextField txtNsFilter;
 	private JTextField txtVarsFilter;
 	private JTextField txtClojurecoremap;
@@ -40,38 +35,8 @@ public class BrowserForm extends JPanel {
 	/**
 	 * Create the panel.
 	 */
-	public BrowserForm() {
+	public BrowserFormHtmlSplit() {
 		setName("root-panel");
-		
-		JPopupMenu popupMenu = new JPopupMenu();
-		popupMenu.setName("main-pmenu");
-		addPopup(this, popupMenu);
-		
-		JMenuItem mntmCopy = new JMenuItem("Copy");
-		mntmCopy.setName("copy-btn");
-		popupMenu.add(mntmCopy);
-		
-		JMenuItem mntmPasteFqn = new JMenuItem("Paste fqn");
-		mntmPasteFqn.setName("paste-fqn-btn");
-		popupMenu.add(mntmPasteFqn);
-		
-		JSeparator separator = new JSeparator();
-		popupMenu.add(separator);
-		
-		JRadioButtonMenuItem rdbtnmntmOnline = new JRadioButtonMenuItem("Online");
-		rdbtnmntmOnline.setName("online-rb");
-		popupMenu.add(rdbtnmntmOnline);
-		
-		JRadioButtonMenuItem rdbtnmntmOffline = new JRadioButtonMenuItem("Offline");
-		rdbtnmntmOffline.setName("offline-btn");
-		popupMenu.add(rdbtnmntmOffline);
-		
-		JSeparator separator_1 = new JSeparator();
-		popupMenu.add(separator_1);
-		
-		JMenuItem mntmUpdateOfflineRepo = new JMenuItem("Update offline repo");
-		mntmUpdateOfflineRepo.setName("update-offline-repo-btn");
-		popupMenu.add(mntmUpdateOfflineRepo);
 		setLayout(new MigLayout("", "[][][][][][grow]", "[][][][grow][]"));
 		
 		JLabel lblNamespace = new JLabel("Namespaces");
@@ -101,16 +66,18 @@ public class BrowserForm extends JPanel {
 		
 		JComboBox comboBox_2 = new JComboBox();
 		comboBox_2.setName("doc-cbx");
-		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Examples", "See alsos", "Comments", "Source", "Value"}));
+		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Source", "Examples", "Comments", "See alsos", "Value"}));
 		add(comboBox_2, "cell 5 1");
 		
 		txtNsFilter = new JTextField();
+		txtNsFilter.setToolTipText("regex filter for namespace list");
 		txtNsFilter.setName("ns-filter-tf");
 		txtNsFilter.setFont(new Font("Inconsolata", Font.PLAIN, 13));
 		add(txtNsFilter, "cell 0 2 3 1,growx");
 		txtNsFilter.setColumns(10);
 		
 		txtVarsFilter = new JTextField();
+		txtVarsFilter.setToolTipText("regex filter for vars list");
 		txtVarsFilter.setName("vars-filter-tf");
 		txtVarsFilter.setFont(new Font("Inconsolata", Font.PLAIN, 13));
 		add(txtVarsFilter, "cell 3 2 2 1,growx");
@@ -125,12 +92,11 @@ public class BrowserForm extends JPanel {
 		txtClojurecoremap.setColumns(10);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setName("ns-lb-sp");
+		scrollPane.setName("ns-scroll-pane");
 		add(scrollPane, "cell 0 3 3 1,grow");
 		
 		JList list = new JList();
 		scrollPane.setViewportView(list);
-		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setName("ns-lb");
 		list.setFont(new Font("Inconsolata", Font.PLAIN, 13));
 		list.setModel(new AbstractListModel() {
@@ -144,13 +110,13 @@ public class BrowserForm extends JPanel {
 		});
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
-		scrollPane_1.setName("vars-lb-sp");
+		scrollPane_1.setName("vars-scroll-pane");
 		add(scrollPane_1, "cell 3 3 2 1,grow");
 		
 		JList list_1 = new JList();
 		list_1.setFont(new Font("Inconsolata", Font.PLAIN, 13));
 		list_1.setModel(new AbstractListModel() {
-			String[] values = new String[] {"123456789012345678901234567890123456", "2", "3", "4", "5", "6", "7", "8", "9", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
+			String[] values = new String[] {"123456789012345678901234567890123456"};
 			public int getSize() {
 				return values.length;
 			}
@@ -163,15 +129,15 @@ public class BrowserForm extends JPanel {
 		list_1.setName("vars-lb");
 		
 		JScrollPane scrollPane_2 = new JScrollPane();
-		scrollPane_2.setName("doc-ta-sp");
+		scrollPane_2.setName("doc-scroll-pane");
 		add(scrollPane_2, "cell 5 3,grow");
 		
-		JTextArea txtrDocArea = new JTextArea();
-		scrollPane_2.setViewportView(txtrDocArea);
-		txtrDocArea.setEditable(false);
-		txtrDocArea.setName("doc-ta");
-		txtrDocArea.setFont(new Font("Inconsolata", Font.PLAIN, 14));
-		txtrDocArea.setText("Doc Area\n123456789012345678901234567890123456789012345678901234567890123456789012\n---------------------maximum width ruler------------------------------");
+		JEditorPane dtrpnJaja = new JEditorPane();
+		dtrpnJaja.setFont(new Font("Inconsolata", Font.PLAIN, 14));
+		dtrpnJaja.setEditable(false);
+		dtrpnJaja.setName("doc-ta");
+		dtrpnJaja.setText("123456789012345678901234567890123456789012345678901234567890123456789012");
+		scrollPane_2.setViewportView(dtrpnJaja);
 		
 		JLabel lblnsentries = new JLabel("9999");
 		lblnsentries.setName("ns-entries-lbl");
@@ -179,6 +145,7 @@ public class BrowserForm extends JPanel {
 		add(lblnsentries, "cell 0 4 2 1,alignx left");
 		
 		JButton btnRequire = new JButton("require");
+		btnRequire.setToolTipText("(require\u2026) \nselected unloaded namespace");
 		btnRequire.setName("ns-require-btn");
 		add(btnRequire, "cell 2 4");
 		
@@ -188,33 +155,19 @@ public class BrowserForm extends JPanel {
 		add(lblvarsentries, "cell 3 4,alignx left");
 		
 		JButton btnTrace = new JButton("trace");
-		btnTrace.setName("var-trace-btn");
+		btnTrace.setToolTipText("(un)trace selected var or all vars in selected ns");
+		btnTrace.setName("trace-var-btn");
 		add(btnTrace, "cell 4 4");
 		
 		JButton btnEdit = new JButton("Edit");
+		btnEdit.setToolTipText("open $EDITOR with source code file - only project's file, no jars");
 		btnEdit.setName("edit-btn");
 		add(btnEdit, "flowx,cell 5 4,alignx right");
 		
 		JButton btnBrowse = new JButton("Browse");
+		btnBrowse.setToolTipText("open browser with local doc or clojuredocs' examples/comments");
 		btnBrowse.setName("browse-btn");
 		add(btnBrowse, "cell 5 4,alignx right");
 
-	}
-	private static void addPopup(Component component, final JPopupMenu popup) {
-		component.addMouseListener(new MouseAdapter() {
-			public void mousePressed(MouseEvent e) {
-				if (e.isPopupTrigger()) {
-					showMenu(e);
-				}
-			}
-			public void mouseReleased(MouseEvent e) {
-				if (e.isPopupTrigger()) {
-					showMenu(e);
-				}
-			}
-			private void showMenu(MouseEvent e) {
-				popup.show(e.getComponent(), e.getX(), e.getY());
-			}
-		});
 	}
 }
