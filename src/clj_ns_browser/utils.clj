@@ -10,7 +10,8 @@
   (:require [cljsh.completion]
             [clojure.set]
             [cd-client.core]
-            [clojure.java.shell])
+            [clojure.java.shell]
+            [clojure.tools.namespace])
   (:use [seesaw.core]
         [clojure.pprint :only [pprint]]
         [clj-info.doc2txt :only [doc2txt]]
@@ -26,9 +27,11 @@
   "Returns a sorted set of the name-strings of all namespaces found on class-path."
   []
   (apply sorted-set
-    (map  (comp cljsh.completion/class-or-ns-name :name)
-          (filter cljsh.completion/clojure-ns?
-            cljsh.completion/available-classes))))
+    (map str (clojure.tools.namespace/find-namespaces-on-classpath))))
+;;   (apply sorted-set
+;;     (map  (comp cljsh.completion/class-or-ns-name :name)
+;;           (filter cljsh.completion/clojure-ns?
+;;             cljsh.completion/available-classes))))
 
 
 (defn all-ns-loaded
@@ -196,7 +199,7 @@ from clojuredocs for fqn"
               ;;m-html (doc2html (str (selection ns-lb) "/" s))
               txt (str (:title m) \newline (:message m))]
           txt)
-        
+
         "Source"
         (if is-ns?
           (str "Select individual symbols in the namespace to see source")
@@ -204,7 +207,7 @@ from clojuredocs for fqn"
                                    (catch Exception e))]
             source-str
             (str "Sorry - no source code available for " fqn)))
-        
+
         "Examples" (render-clojuredocs-text fqn :examples is-ns?)
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
         "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
