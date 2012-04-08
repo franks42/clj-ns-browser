@@ -34,6 +34,15 @@
       (seesaw.selector/id-of! w (keyword n))))
   root)
 
+
+(defn id-values-as-symbols
+  "Given a root widget, return a sorted vector of symbols
+  for all the :id values in the tree.
+  Can be used at the REPL to generate the restructure let-list."
+  [root]
+  (vec (apply sorted-set
+    (map (fn [k] (symbol (name k)))(keys (group-by-id root))))))
+
 ;;
 
 ;; seesaw docs say to call this early
@@ -54,12 +63,9 @@
                             "publics"   ns-publics
                             "refers"    ns-refers
                             "special-forms" ns-special-forms})
-;; These seemed to be unused.
-;;(def doc-cbx-value-list ["All" "Doc" "Examples" "Source" "Value"])
-;;(def doc-cbx-value-fn-map { "Doc"       'doc-text
-;;                            "Examples"  'examples-text
-;;                            "Source"    'source-text
-;;                            "Value"     'value-text})
+
+(def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
+                         "Comments" "See alsos" "Value"])
 
 
 ;; "global" atoms
@@ -93,22 +99,26 @@
   (let [atm-map {:ns-require-btn-atom (atom true)
                  :browse-btn-atom (atom true)
                  :edit-btn-atom (atom true)}
-        {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
-                edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-require-btn root-panel
-                vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb]}
+        {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
+                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
+                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
+                vars-header-lbl vars-lb vars-lb-sp]}
           (group-by-id root)
         {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
           atm-map]
+    (let [l (select root [:#vars-lb-sp])]
+      (config! l :preferred-size (config l :size)))
     (seesaw.meta/put-meta! root :atom-map atm-map)
     ;; ns
     (config! ns-lb :model @all-ns-loaded-atom)
     (config! vars-lb :model [])
     (config! ns-entries-lbl :text "0")
     (config! ns-require-btn :enabled? false)
+    (config! doc-cbx :model doc-cbx-value-list)
     (config! edit-btn :enabled? false)
     (config! browse-btn :enabled? false)
+    (config! var-trace-btn :enabled? false)
     (listen ns-require-btn
       :action (fn [event] (swap! ns-require-btn-atom not)))
     (listen browse-btn
@@ -127,11 +137,11 @@
 
 (defn init-after-bind
   [root]
-  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
-                edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-require-btn root-panel
-                vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb]}
+  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
+                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
+                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
+                vars-header-lbl vars-lb vars-lb-sp]}
           (group-by-id root)
         {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
           (seesaw.meta/get-meta root :atom-map)]
@@ -143,11 +153,11 @@
 (defn bind-all
   "Collection of all the bind-statements that wire the clj-ns-browser events and widgets. (pretty amazing how easy it is to express those dependency-graphs!)"
   [root]
-  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
-                edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-require-btn root-panel
-                vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb]}
+  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
+                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
+                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
+                vars-header-lbl vars-lb vars-lb-sp]}
           (group-by-id root)
         {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
           (seesaw.meta/get-meta root :atom-map)]
@@ -354,8 +364,10 @@
 
 (defn refresh-clj-ns-browser
   "Refresh all or the given browser-window (pack! and show!)"
-  ([] (map #(invoke-later (show! (pack! %))) @browser-root-frms))
-  ([root] (invoke-later (show! (pack! root)))))
+;;   ([] (map #(invoke-later (show! (pack! %))) @browser-root-frms))
+;;   ([root] (invoke-later (show! (pack! root)))))
+  ([] (map #(invoke-later (show! %)) @browser-root-frms))
+  ([root] (invoke-later (show! root))))
 
 
 (defn new-clj-ns-browser
@@ -364,7 +376,9 @@
   []
   (let [root (frame :title "Clojure Namespace Browser")
         b-form (identify (clj_ns_browser.BrowserForm.))]
+        ;;b-form (identify (clj_ns_browser.BrowserFormHTML.))]
     (config! root :content b-form)
+    (pack! root)
     (init-before-bind root)
     (bind-all root)
     (init-after-bind root)

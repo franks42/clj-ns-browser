@@ -2,6 +2,8 @@
 
 Smalltalk-like namespace/class/var/function browser for Clojure's on-line docs, source-code, clojuredocs-examples & comments, based on seesaw.
 
+Look for the last released version on clojars.org: [clj-ns-browser "1.1.0"].
+
 
 ## Install
 
@@ -10,7 +12,7 @@ For any project where you want to add the ability to browse your currently loade
 * in your project.clj, add:
 
 ```clojure
-    :dev-dependencies [[clj-ns-browser "1.0.0"]]
+    :dev-dependencies [[clj-ns-browser "1.1.0"]]
 ```
 
 Then:
@@ -118,6 +120,10 @@ When you look at the source code of those vars in your local project, then the e
 Seesaw and its main author Dave Ray - fantastic tool and near real-time support on the mailing list!
 
 (Seesaw turns the Horror of Swing into a friendly, well-documented, Clojure library: "https://github.com/daveray/seesaw")
+
+Andy Fingerhut for the suggestions and improvements - all I had to do was pull&merge - pls keep them coming!
+
+The clj-ns-browser depends on a whole bunch of opensource libraries: seesaw, clj-info, hiccup,  clojure-complete, cd-client, clojuredocs, swank-clojure, leiningen, ....and all the libs they depend on, ... and clojure of course.
 
 
 ## License

@@ -28,11 +28,11 @@
   ([a-name] (sdoc* (str *ns*) a-name))
   ([a-ns a-name]
     (let [root (clj-ns-browser.browser/get-clj-ns-browser)
-          {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-tf
-                  edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                  ns-header-lbl ns-lb ns-require-btn root-panel
-                  vars-cbx vars-entries-lbl vars-filter-tf
-                  vars-header-lbl vars-lb]}
+        {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
+                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
+                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
+                vars-header-lbl vars-lb vars-lb-sp]}
             (group-by-id root)]
       (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
         (let [sym1 (symbol fqn)
