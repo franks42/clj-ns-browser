@@ -10,7 +10,8 @@
   (:require [cljsh.completion]
             [clojure.set]
             [cd-client.core]
-            [clojure.java.shell])
+            [clojure.java.shell]
+            [clojure.string :as str])
   (:use [seesaw.core]
         [clojure.pprint :only [pprint]]
         [clj-info.doc2txt :only [doc2txt]]
@@ -146,18 +147,54 @@
 (defn no-nils [coll] (filter #(not (nil? %)) coll))
 
 
+;; The clean-* functions are probably best removed after changing
+;; cd-client.core functions so they no longer include the text we're
+;; removing here.  They would be harmless even then, except for a bit
+;; of inefficiency.
+(defn clean-cd-client-examples [s]
+  (let [lines (str/split-lines s)
+        lines (remove (fn [l]
+                        (or (= l "========== vvv Examples ================")
+                            (= l "========== ^^^ Examples ================")
+                            (re-matches #"\d+ examples? found for .*" l)))
+                      lines)]
+    (str/join "\n" lines)))
+
+(defn clean-cd-client-see-alsos [s]
+  (let [lines (str/split-lines s)
+        lines (remove (fn [l]
+                        (or (= l "========== vvv See also ================")
+                            (= l "========== ^^^ See also ================")
+                            (re-matches #"\d+ see-alsos? found for .*" l)))
+                      lines)]
+    (str/join "\n" lines)))
+
+(defn clean-cd-client-comments [s]
+  (let [lines (str/split-lines s)
+        lines (remove (fn [l]
+                        (or (= l "========== vvv Comments ================")
+                            (= l "========== ^^^ Comments ================")
+                            (re-matches #"\d+ comments? found for .*" l)))
+                      lines)]
+    (str/join "\n" lines)))
+
 (defn clojuredocs-text
   [ns-str name-str info-type]
-  (with-out-str
-    (case info-type
-      :examples (cd-client.core/pr-examples-core ns-str name-str)
-      :see-alsos (cd-client.core/pr-see-also-core ns-str name-str)
-      :comments (cd-client.core/pr-comments-core ns-str name-str))))
+  (case info-type
+    :examples (clean-cd-client-examples
+               (with-out-str
+                 (cd-client.core/pr-examples-core ns-str name-str)))
+    :see-alsos (clean-cd-client-see-alsos
+                (with-out-str
+                  (cd-client.core/pr-see-also-core ns-str name-str)))
+    :comments (clean-cd-client-comments
+               (with-out-str
+                 (cd-client.core/pr-comments-core ns-str name-str)))))
 
 
 (defn render-clojuredocs-text
-  "Obtain and return examples, see alsos, comments, or all as a string
-from clojuredocs for fqn"
+  "Obtain and return examples, see alsos, or comments as a string from
+clojuredocs for fqn"
   [real-fqn info-type is-ns?]
   (if is-ns?
     (str "Select individual symbols in the namespace to see " (name info-type))
@@ -168,10 +205,114 @@ from clojuredocs for fqn"
           ns-str (namespace (symbol fqn))]
       (if ns-str
         (if-let [s (clojuredocs-text ns-str name-str info-type)]
-          s
+          (if (str/blank? s)
+            ""
+            (str (str/trim-newline s) "\n"))
           (str "Sorry no " (name info-type) " available from clojuredoc for: "
                fqn))
         (str "Sorry, not a fully qualified clojure name: " fqn)))))
+
+
+(def ^:dynamic *max-value-display-size* 500)
+
+;; TBD: Problems with these, probably because of problems with
+;; cd-client.core behavior:
+;; (render-doc-text "clojure.core/+" "Examples")
+;; (render-doc-text "clojure.core/+" "See alsos")
+;; (render-doc-text "clojure.core/+" "Comments")
+;; These seem to work fine:
+;; clojure.core/-
+;; clojure.core/*
+
+;; TBD: How to modify eval-sym so it can evaluate the values of
+;; private symbols?
+
+;; TBD: What to show for atoms, refs?  It might be useful some day to
+;; "unwrap" and show the value inside, or at least have an easy way in
+;; the GUI to do so.
+
+;; TBD:
+;; atom?
+;; class?
+;; future?  Will eval above force a future?  Should we avoid that?
+;; realized?
+;; special-symbol?
+;; symbol?
+;; var?
+
+;; (in-ns 'clj-ns-browser.utils)
+
+
+;; "clojure.core//" appears to be a special case not handled well by
+;; the function symbol.
+(defn better-symbol [fqn]
+  (if (= fqn "clojure.core//")
+    (symbol "clojure.core" "/")
+    (symbol fqn)))
+
+
+(defn eval-sym [sym]
+  (if (special-symbol? sym)
+    [:special-symbol nil]
+    (try
+      [:eval-ok (eval sym)]
+      (catch Exception e
+        (let [msg (.getMessage e)]
+          (cond
+           (re-find #"java\.lang\.RuntimeException: Can't take value of a macro:" msg)
+           [:macro nil]
+           (re-find #"java\.lang\.IllegalStateException: var: .* is not public" msg)
+           ;; This doesn't work.
+           ;;[:eval-ok (deref (var sym))]
+           [:private nil]
+           :else [:exception e]))))))
+
+
+(defn render-value
+  [fqn is-ns?]
+  (if is-ns?
+    (str fqn " is a namespace")
+    (let [sym (better-symbol fqn)
+          [status val] (eval-sym sym)
+          c (class val)]
+      (case status
+        :macro (str "CLASS N/A\n\n"
+                    "VALUE <macro>\n")
+        :private (str "CLASS <unknown>\n\n"
+                      "VALUE <private>\n")
+        :special-symbol (str "CLASS N/A\n\n"
+                             "VALUE <special-symbol>\n")
+        :exception (str "CLASS <unknown>\n\n"
+                        "VALUE got following exception while attempting eval symbol:\n"
+                        (with-out-str
+                          (binding [*err* *out*]
+                            (clojure.repl/pst val))))
+        :eval-ok
+        (str "CLASS " (if c (print-str c) "<none>") "\n\n"
+             "VALUE "
+             (cond
+              (nil? val) "nil"
+              (fn? val) (str (clojure.repl/demunge (str val))
+                             "   (function, after demunge)")
+              (or (number? val)
+                  (identical? true val)
+                  (identical? false val)
+                  (char? val)
+                  (keyword? val))
+              (str val)
+              (string? val) (if (<= (count val) *max-value-display-size*)
+                              val
+                              (str (subs val 0 *max-value-display-size*)
+                                   (format "   (truncated to %d characters)"
+                                           *max-value-display-size*)))
+              (coll? val) (str
+                           " (any ... or # shown are likely due to truncation for brevity)\n"
+                           (with-out-str
+                             (binding [*print-length* 10
+                                       *print-level* 5]
+                               (clojure.pprint/pprint val))))
+              :else (str val "   (default display using .toString)"))
+             "\n")))))
 
 
 (defn render-doc-text
@@ -182,16 +323,25 @@ from clojuredocs for fqn"
       (case doc-opt
         ;; quick to write, if a little inefficient
         "All" (if is-ns?
-                (str (render-doc-text fqn "Doc") "\n\n"
+                (str (render-doc-text fqn "Doc")
+                     "\n\nSource:\n"
                      (render-doc-text fqn "Source"))
-                (str (render-doc-text fqn "Doc") "\n\n"
-                     (render-doc-text fqn "Examples") "\n"
-                     (render-doc-text fqn "See alsos") "\n"
-                     (render-doc-text fqn "Source") "\n\n"
-                     (render-doc-text fqn "Comments") "\n"
-                     (render-doc-text fqn "Value")))
+                (str (render-doc-text fqn "Doc")
+                     "\n\n\nEXAMPLES\n"
+                     (render-doc-text fqn "Examples")
+                     "\nSEE ALSO\n"
+                     (render-doc-text fqn "See alsos")
+                     "\nCOMMENTS\n"
+                     (render-doc-text fqn "Comments")
+                     "\n"
+                     (render-doc-text fqn "Value")
+                     "\nSOURCE\n"
+                     (render-doc-text fqn "Source")))
         "Doc"
-        (let [m (doc2txt fqn)
+        (let [m (if (= fqn "clojure.core//")
+                  {:title "clojure.core//   -   Function",
+                   :message (with-out-str (clojure.repl/doc clojure.core//))}
+                  (doc2txt fqn))
               ;;m (doc2txt (str (selection ns-lb) "/" s))
               ;;m-html (doc2html (str (selection ns-lb) "/" s))
               txt (str (:title m) \newline (:message m))]
@@ -200,7 +350,7 @@ from clojuredocs for fqn"
         "Source"
         (if is-ns?
           (str "Select individual symbols in the namespace to see source")
-          (if-let [source-str (try (clojure.repl/source-fn (symbol fqn))
+          (if-let [source-str (try (clojure.repl/source-fn (better-symbol fqn))
                                    (catch Exception e))]
             source-str
             (str "Sorry - no source code available for " fqn)))
@@ -208,7 +358,7 @@ from clojuredocs for fqn"
         "Examples" (render-clojuredocs-text fqn :examples is-ns?)
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
         "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
-        "Value" (str "Sorry - no value available for " fqn)
+        "Value" (render-value fqn is-ns?)
         (str "Internal error - clj-ns-browser.utils/render-doc-text got unknown doc-opt='" doc-opt "'")))))
 
 
@@ -223,7 +373,7 @@ from clojuredocs for fqn"
   "Returns the path to the source file for fqn,
   or nil if none applies."
   [fqn]
-  (let [fqn-sym (symbol fqn)]
+  (let [fqn-sym (better-symbol fqn)]
     (when-let [v (and (namespace fqn-sym) (find-ns (symbol (namespace fqn-sym))) (find-var fqn-sym))]
       (when-let [m (meta v)]
         (when-let [f (:file m)]
