@@ -310,10 +310,7 @@ clojuredocs for fqn"
                                            *max-value-display-size*)))
               (coll? val) (str
                            " (any ... or # shown are likely due to truncation for brevity)\n"
-                           (with-out-str
-                             (binding [*print-length* 10
-                                       *print-level* 5]
-                               (clojure.pprint/pprint val))))
+                           (pprint-str val))
               :else (str val "   (default display using .toString)"))
              "\n")))))
 
@@ -448,4 +445,4 @@ only public symbols of other namespaces."
   "Shorter-name version of apropos that also sorts and pretty-prints
 the results."
   [str-or-pattern & opts]
-  (clojure.pprint/pprint (sort (apply apropos str-or-pattern opts))))
+  (pprint (sort (apply apropos str-or-pattern opts))))
