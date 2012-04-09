@@ -44,8 +44,7 @@
               (invoke-soon (selection! ns-cbx "loaded"))
               (invoke-soon (selection! ns-lb ns1))
               (invoke-soon (selection! vars-cbx "publics"))
-              (invoke-soon (selection! vars-lb name1))
-              (invoke-soon (selection! doc-cbx "Doc")))
+              (invoke-soon (selection! vars-lb name1)))
             (if (find-ns (symbol name1))
               ;; should be namespace
               (do
