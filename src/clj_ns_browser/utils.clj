@@ -24,6 +24,13 @@
 (defn ns-special-forms [& no-op]
   '{"def" def "if" if "do" do "let" let "quote" quote "var" var "fn" fn "loop" loop "recur" recur "throw" throw "try" try "monitor-enter" monitor-enter "monitor-exit" monitor-exit "dot" dot "new" new "set!" set!})
 
+(defn all-publics [& args]
+  (zipmap (mapcat (fn [ns]
+                    (map #(symbol (str ns) (str %))
+                         (keys (ns-publics ns))))
+                  (all-ns))
+          (repeat nil)))
+
 (defn all-ns-classpath
   "Returns a sorted set of the name-strings of all namespaces found on class-path."
   []

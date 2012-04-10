@@ -54,15 +54,16 @@
 (def ns-cbx-value-list ["loaded" "unloaded"])
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
-(def vars-cbx-value-list ["aliases" "imports" "interns"
-                          "map" "publics" "refers" "special-forms"])
+(def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
+                          "refers" "special-forms" "all-publics"])
 (def vars-cbx-value-fn-map {"aliases"   ns-aliases
                             "imports"   ns-imports
                             "interns"   ns-interns
                             "map"       ns-map
                             "publics"   ns-publics
                             "refers"    ns-refers
-                            "special-forms" ns-special-forms})
+                            "special-forms" ns-special-forms
+                            "all-publics" all-publics})
 
 (def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
                          "Comments" "See alsos" "Value"])
@@ -264,7 +265,7 @@
         (b/notify-soon)
         (b/property ns-filter-tf :background)))
     ;;
-    ;; typed regex in ns-filter-tf => visual feedback about validity
+    ;; typed regex in vars-filter-tf => visual feedback about validity
     (b/bind
       ; As the text of the textbox changes ...
       vars-filter-tf
