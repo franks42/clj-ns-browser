@@ -55,7 +55,8 @@
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
 (def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
-                          "refers" "special-forms" "all-publics"])
+                          "refers" "special-forms" "all-publics"
+                          "search-all-docs"])
 (def vars-cbx-value-fn-map {"aliases"   ns-aliases
                             "imports"   ns-imports
                             "interns"   ns-interns
@@ -63,7 +64,9 @@
                             "publics"   ns-publics
                             "refers"    ns-refers
                             "special-forms" ns-special-forms
-                            "all-publics" all-publics})
+                            "all-publics" all-publics
+                            "search-all-docs"  identity  ; ret value not used
+                            })
 
 (def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
                          "Comments" "See alsos" "Value"])
@@ -84,9 +87,23 @@
 ;;(b/transform regx-tf-filter :ns-filter-tf)
 (defn regx-tf-filter
   "filter for use in bind that filters string-list s-l with regex of text-field t-f"
-  [s-l t-f]
-  (when-let [r (try (re-pattern (config t-f :text)) (catch Exception e nil))]
-    (filter #(re-find r %) s-l)))
+  [{:keys [string-seq already-filtered]} t-f]
+  (if already-filtered
+    string-seq
+    (when-let [r (try (re-pattern (config t-f :text)) (catch Exception e nil))]
+      (filter #(re-find r %) string-seq))))
+
+
+(defn find-in-doc-strings
+  [pat-in-str]
+  (when-let [r (try (re-pattern pat-in-str)
+                    (catch Exception e nil))]
+    (->> (all-ns)
+         (mapcat #(map meta (vals (ns-interns %))))
+         (filter #(and (:doc %)
+                       (or (re-find r (:doc %))
+                           (re-find r (str (:name %))))))
+         (map #(str (:ns %) "/" (:name %))))))
 
 
 (defn widget-model-count
@@ -229,7 +246,7 @@
          ns-filter-tf])
       (b/transform (fn [o]
         (let [v (selection ns-cbx)]
-          ((get ns-cbx-value-fn-map v)))))
+          {:already-filtered false :string-seq ((get ns-cbx-value-fn-map v))})))
       (b/transform regx-tf-filter ns-filter-tf)
       (b/notify-soon)
       (b/property ns-lb :model))
@@ -247,8 +264,13 @@
               v (selection vars-cbx)
               f (get vars-cbx-value-fn-map v)]
           (if n
-            (seq (sort (map str (keys (f n)))))
-            []))))
+            (if (= v "search-all-docs")
+              {:already-filtered true
+               :string-seq (seq (sort (find-in-doc-strings
+                                       (config vars-filter-tf :text))))}
+              {:already-filtered false
+               :string-seq (seq (sort (map str (keys (f n)))))})
+            {:already-filtered false :string-seq []}))))
       (b/transform regx-tf-filter vars-filter-tf)
       (b/notify-soon)
       (b/property vars-lb :model))
