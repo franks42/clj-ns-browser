@@ -325,9 +325,9 @@
       (b/transform (fn [o] (selection doc-cbx)))
       (b/transform (fn [o]
         (case o
-          "Doc" (invoke-soon (config! browse-btn :enabled? true))
+          ("All" "Doc") (invoke-soon (config! browse-btn :enabled? true))
 
-          ("All" "Examples" "See alsos" "Comments")
+          ("Examples" "See alsos" "Comments")
           (if-let [fqn (config doc-tf :text)]
             (future
               (let [url (clojuredocs-url fqn)
@@ -340,15 +340,15 @@
     (b/bind
       (apply b/funnel [doc-tf doc-cbx])
       (b/transform (fn [o] (selection doc-cbx)))
-      (b/transform (fn [o] (if (= "Source" o) true false)))
+      (b/transform (fn [o] (if (get #{"Source" "All"} o) true false)))
       (b/transform (fn [o]
         (when o (if (meta-when-file (config doc-tf :text))
                   true
                   false))))
       (b/notify-soon)
       (b/property edit-btn :enabled?))
-    ;
-      ;; browser-btn pressed =>
+    ;;
+    ;; browser-btn pressed =>
     ;; bring up browser with url
     (b/bind
       browse-btn-atom
@@ -358,9 +358,9 @@
           (when-let [fqn (config doc-tf :text)]
             (future
               (case o
-                "Doc" (bdoc* fqn)
+                ("All" "Doc") (bdoc* fqn)
 
-                ("All" "Examples" "See alsos" "Comments")
+                ("Examples" "See alsos" "Comments")
                 (when-let [url (clojuredocs-url fqn)]
                   (clojure.java.browse/browse-url url))
 
