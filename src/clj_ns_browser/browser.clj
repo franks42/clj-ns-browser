@@ -304,12 +304,13 @@
     (b/bind
       ; As the text of the fqn text field changes ...
       (apply b/funnel [doc-tf doc-cbx])
-      (b/filter (fn [o] (not (or (nil? (first o)) (= "" (first o))
-                                 (nil? (second o))(= "" (second o))))))
+      (b/filter (fn [[doc-tf doc-cbx]]
+                  (not (or (nil? doc-tf)  (= "" doc-tf)
+                           (nil? doc-cbx) (= "" doc-cbx)))))
       (b/transform
-        (fn [o]
+        (fn [[doc-tf doc-cbx]]
           (future
-            (let [s (render-doc-text (first o) (second o))]
+            (let [s (render-doc-text doc-tf doc-cbx)]
               (invoke-soon (config! doc-ta :text s)))))))
     ;;
     ;; new text in doc-ta => scroll to top

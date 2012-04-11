@@ -372,9 +372,9 @@ clojuredocs for fqn"
 (defn clojuredocs-url
   "Returns the clojuredoc url for given FQN"
   [fqn]
-  (let [r (ns-name-class-str fqn)]
-    (when (and (first r)(second r))
-      (:url (cd-client.core/examples (first r) (second r))))))
+  (let [[ns-str name-str] (ns-name-class-str fqn)]
+    (when (and ns-str name-str)
+      (:url (cd-client.core/examples ns-str name-str)))))
 
 (defn meta-when-file
   "Returns the path to the source file for fqn,
