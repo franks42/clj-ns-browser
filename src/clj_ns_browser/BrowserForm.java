@@ -88,7 +88,7 @@ public class BrowserForm extends JPanel {
 		JLabel lblDocumentation = new JLabel("Documentation");
 		lblDocumentation.setName("doc-header-lbl");
 		lblDocumentation.setFont(new Font("Lucida Grande", Font.BOLD, 15));
-		add(lblDocumentation, "cell 5 0,alignx center");
+		add(lblDocumentation, "cell 5 0 2 1,alignx center");
 		
 		JComboBox comboBox_1 = new JComboBox();
 		comboBox_1.setName("ns-cbx");
@@ -103,7 +103,7 @@ public class BrowserForm extends JPanel {
 		JComboBox comboBox_2 = new JComboBox();
 		comboBox_2.setName("doc-cbx");
 		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Examples", "See alsos", "Comments", "Source", "Value"}));
-		add(comboBox_2, "cell 5 1");
+		add(comboBox_2, "cell 5 1 2 1");
 		
 		txtNsFilter = new JTextField();
 		txtNsFilter.setName("ns-filter-tf");
@@ -122,7 +122,7 @@ public class BrowserForm extends JPanel {
 		txtClojurecoremap.setName("doc-tf");
 		txtClojurecoremap.setEditable(false);
 		txtClojurecoremap.setText("clojure.core/map");
-		add(txtClojurecoremap, "cell 5 2,growx");
+		add(txtClojurecoremap, "cell 5 2 2 1,growx");
 		txtClojurecoremap.setColumns(10);
 		
 		JScrollPane scrollPane = new JScrollPane();
@@ -165,7 +165,7 @@ public class BrowserForm extends JPanel {
 		
 		JScrollPane scrollPane_2 = new JScrollPane();
 		scrollPane_2.setName("doc-ta-sp");
-		add(scrollPane_2, "cell 5 3,grow");
+		add(scrollPane_2, "cell 5 3 3 1,grow");
 		
 		JTextArea txtrDocArea = new JTextArea();
 		scrollPane_2.setViewportView(txtrDocArea);
@@ -192,13 +192,17 @@ public class BrowserForm extends JPanel {
 		btnTrace.setName("var-trace-btn");
 		add(btnTrace, "cell 4 4");
 		
+		JButton btnInspect = new JButton("Inspect Coll");
+		btnInspect.setName("inspect-btn");
+		add(btnInspect, "flowx,cell 5 4,alignx right");
+		
 		JButton btnEdit = new JButton("Edit");
 		btnEdit.setName("edit-btn");
-		add(btnEdit, "flowx,cell 5 4,alignx right");
+		add(btnEdit, "flowx,cell 6 4,alignx right");
 		
 		JButton btnBrowse = new JButton("Browse");
 		btnBrowse.setName("browse-btn");
-		add(btnBrowse, "cell 5 4,alignx right");
+		add(btnBrowse, "cell 6 4,alignx right");
 
 	}
 	private static void addPopup(Component component, final JPopupMenu popup) {

@@ -11,6 +11,7 @@
             [seesaw.bind :as b]
             [clojure.java.browse]
             [clojure.java.shell]
+            [clj-ns-browser.inspector]
             [seesaw.meta]
             [clojure.java.javadoc])
   (:use [clj-ns-browser.utils]
@@ -116,14 +117,16 @@
   [root]
   (let [atm-map {:ns-require-btn-atom (atom true)
                  :browse-btn-atom (atom true)
-                 :edit-btn-atom (atom true)}
+                 :edit-btn-atom (atom true)
+                 :inspect-btn-atom (atom true)}
         {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                doc-tf edit-btn inspect-btn ns-cbx ns-entries-lbl ns-filter-tf
                 ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
                 var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
                 vars-header-lbl vars-lb vars-lb-sp]}
           (group-by-id root)
-        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
+        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom
+                inspect-btn-atom]}
           atm-map]
     (let [l (select root [:#vars-lb-sp])]
       (config! l :preferred-size (config l :size)))
@@ -134,6 +137,7 @@
     (config! ns-entries-lbl :text "0")
     (config! ns-require-btn :enabled? false)
     (config! doc-cbx :model doc-cbx-value-list)
+    (config! inspect-btn :enabled? false)
     (config! edit-btn :enabled? false)
     (config! browse-btn :enabled? false)
     (config! var-trace-btn :enabled? false)
@@ -143,6 +147,8 @@
       :action (fn [event] (swap! browse-btn-atom not)))
     (listen edit-btn
       :action (fn [event] (swap! edit-btn-atom not)))
+    (listen inspect-btn
+      :action (fn [event] (swap! inspect-btn-atom not)))
     ;; vars
     (config! vars-entries-lbl :text "0")
     ; doc
@@ -156,12 +162,13 @@
 (defn init-after-bind
   [root]
   (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                doc-tf edit-btn inspect-btn ns-cbx ns-entries-lbl ns-filter-tf
                 ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
                 var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
                 vars-header-lbl vars-lb vars-lb-sp]}
           (group-by-id root)
-        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
+          {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom
+                  inspect-btn-atom]}
           (seesaw.meta/get-meta root :atom-map)]
     (invoke-soon (selection! ns-cbx "loaded"))
     (invoke-soon (selection! vars-cbx "publics"))
@@ -172,12 +179,13 @@
   "Collection of all the bind-statements that wire the clj-ns-browser events and widgets. (pretty amazing how easy it is to express those dependency-graphs!)"
   [root]
   (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
+                doc-tf edit-btn inspect-btn ns-cbx ns-entries-lbl ns-filter-tf
                 ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
                 var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
                 vars-header-lbl vars-lb vars-lb-sp]}
           (group-by-id root)
-        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
+          {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom
+                  inspect-btn-atom]}
           (seesaw.meta/get-meta root :atom-map)]
     ;; # of entries in ns-lb => ns-entries-lbl
     (b/bind
@@ -336,7 +344,7 @@
                  (config! browse-btn :enabled? r)))))
 
           nil))))  ; do nothing if no match
-    ;
+    ;;
     (b/bind
       (apply b/funnel [doc-tf doc-cbx])
       (b/transform (fn [o] (selection doc-cbx)))
@@ -347,6 +355,21 @@
                   false))))
       (b/notify-soon)
       (b/property edit-btn :enabled?))
+    ;;
+    (b/bind
+      (apply b/funnel [doc-tf doc-cbx])
+      (b/transform (fn [o] [(config doc-tf :text) (selection doc-cbx)]))
+      (b/transform (fn [[fqn doc-cbx-sel]]
+                     (if (get #{"Value" "All"} doc-cbx-sel) fqn false)))
+      (b/transform (fn [fqn]
+        (when fqn
+          (let [sym (better-symbol fqn)
+                [status val] (eval-sym sym)]
+            (when (and (= status :eval-ok)
+                       (coll? val))
+              true)))))
+      (b/notify-soon)
+      (b/property inspect-btn :enabled?))
     ;;
     ;; browser-btn pressed =>
     ;; bring up browser with url
@@ -375,6 +398,20 @@
           (when-let [m (meta-when-file (config doc-tf :text))]
             (when-let [e (:out (clojure.java.shell/sh "bash" "-c" (str "echo -n $EDITOR")))]
               (:exit (clojure.java.shell/sh "bash" "-c" (str e " +" (:line m) " " (:file m))))))))))
+    ;;
+    ;; inspect-btn pressed =>
+    ;; If var is selected and its value is a collection, create inspector.
+    (b/bind
+      inspect-btn-atom
+      (b/transform (fn [& o]
+        (when-let [fqn (config doc-tf :text)]
+          (let [sym (better-symbol fqn)
+                [status val] (eval-sym sym)]
+            (when (and (= status :eval-ok)
+                       (coll? val))
+              (future
+                (clj-ns-browser.inspector/inspect-tree
+                 val (str "Inspector for value of " fqn)))))))))
     ;;
     )) ; end of bind-all
 
