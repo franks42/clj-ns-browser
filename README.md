@@ -96,9 +96,7 @@ When you look at the source code of those vars in your local project, then the e
 
 * Seems to work well on MacOSX... tested the download/install/run in a fresh account. However, works "more than less" a on Lubuntu - browsing works, but for some unknown reason the "unloaded" ns don't show up there (?) - have to dive into the completion code, "stolen" from swank-clojure to see if there are any platform dependencies... (any advice/suggestion is most welcome...)
 
-* The browser window is a bit "jittery" - sometimes rescales window for different content of list and text-area - gota find out how to stop automatic growing.
-
-* code examples seem to refer to clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser - probably issue in either clojuredocs or cd-client (?)
+* Code examples seem to refer to Clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser.  This is due to the current behavior of the cd-client library when querying the clojuredocs.org site live.  Using an offline snapshot with cd-client gives Clojure 1.3 examples (not fully understood why, and there may be exceptions).
 
 
 ## Todo
@@ -113,7 +111,7 @@ When you look at the source code of those vars in your local project, then the e
 
 * remove cljsh/repls dependency - cleanup the utility and clj-info
 
-* maybe makes more sense to select on functions/macros/classes than publics/interns/maps - especially for novice users (?)
+* maybe makes more sense to select on functions/macros/classes/data than publics/interns/maps - especially for novice users (?).  Or in addition to selecting on functions/macros/classes/data, make it clear in the list which category each symbol falls in, and let user group symbols by this category, e.g. all classes, then all data, then all macros, then all functions.
 
 ## Acknowledgment
 
