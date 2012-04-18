@@ -11,67 +11,45 @@
   Usage:
   (use 'clj-ns-browser.sdoc) in repl
   (ns... (:use [clj-ns-browser.sdoc])) in file."
-  (:require [clj-ns-browser.browser])
-  (:use [clj-ns-browser.utils]
-        [seesaw.core]
-        [clj-info]
-        [clj-info.doc2txt :only [doc2txt]]
-        [clj-info.doc2html :only [doc2html]]))
+  (:require [clj-ns-browser.browser]))
 
 
 (defn sdoc*
-  "Brings up the clj-ns-browser documentation for a var, namespace,
-  or special form given its name.
+  "Help function that brings up the clj-ns-browser documentation for a
+  var, namespace, or special form given its name.
   (generates more info than clojure.core/doc)
-  Name n is string or (quoted-)symbol."
-  ([] (sdoc* (str *ns*) "sdoc"))
+  Input name a-name is a string or quoted-symbol.
+  If a-name is not an fqn, then it is resolved within the a-ns namespace
+  a-ns is symbol, string or namespace - defaults to *ns*.
+  The following invocations at the repl yield the same result:
+  (sdoc* 'clojure.core/map)
+  (sdoc* 'clojure.core 'map)
+  (sdoc* \"clojure.core\" 'map)
+  (sdoc*  (find-ns 'clojure.core) 'map)
+  (sdoc* \"clojure.core/map\")"
+  ([] (sdoc* (str *ns*) "sdoc*"))
   ([a-name] (sdoc* (str *ns*) a-name))
-  ([a-ns a-name]
-    (let [root (clj-ns-browser.browser/get-clj-ns-browser)
-        {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
-                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb vars-lb-sp]}
-            (group-by-id root)]
-      (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
-        (let [sym1 (symbol fqn)
-              name1 (name sym1)
-              ns1 (try (namespace sym1)(catch Exception e))]
-          (if ns1
-            ;; we have a fq-var as a-ns/a-name
-            (do
-              (invoke-soon (selection! ns-cbx "loaded"))
-              (invoke-soon (selection! ns-lb ns1))
-              (invoke-soon (selection! vars-cbx "publics"))
-              (invoke-soon (selection! vars-lb name1)))
-            (if (find-ns (symbol name1))
-              ;; should be namespace
-              (do
-                (invoke-soon (selection! ns-lb name1))
-                (invoke-soon (selection! doc-cbx "Doc")))
-              ;; else must be class
-              (do
-                (invoke-soon (selection! ns-lb (str *ns*)))
-                (invoke-soon (selection! doc-cbx "Doc")))
-                ;; find right entry in ns-maps for name1...
-                ;;clj-ns-browser.core=> (some (fn [kv] (when (= (.getName (val kv)) "java.lang.Enum")(key kv)))(ns-imports *ns*))
-                ;;Enum
-
-                ))
-          (clj-ns-browser.browser/refresh-clj-ns-browser root)
-          (println fqn))
-        (println "Sorry, no info for give name: " a-name)))))
+  ([a-ns a-name] (sdoc* a-ns a-name (clj-ns-browser.browser/get-clj-ns-browser)))
+  ([a-ns a-name browser-frame]
+    (if-let [fqn (clj-ns-browser.browser/browser-with-fqn a-ns a-name browser-frame)]
+      (println fqn)
+      (println "Sorry, no info for given name: " a-name))))
 
 
 (defmacro sdoc
-  "Brings up the clj-ns-browser documentation for a var, namespace,
-  or special form given its name.
+  "Help macro that brings up the clj-ns-browser documentation for a
+  var, namespace, or special form given its name \"a-name\".
   (generates more info than clojure.core/doc)
-  Name n is string, symbol, or quoted symbol."
-  ([] (sdoc*))
-  ([n]
-  (cond (string? n) `(sdoc* ~n)
-        (symbol? n) `(sdoc* ~(str n))
-        (= (type n) clojure.lang.Cons) `(sdoc* ~(str (second n))))))
+  Name a-name is string, symbol, or quoted symbol.
+  If a-name is not an fqn, then it is resolved within *ns*.
+  The following invocations at the repl yield the same result:
+  (sdoc clojure.core/map)
+  (sdoc 'clojure.core/map)
+  (sdoc \"clojure.core/map\")
+  "
+  ([] (sdoc* "sdoc"))
+  ([a-name]
+  (cond (string? a-name) `(sdoc* ~a-name)
+        (symbol? a-name) `(sdoc* ~(str a-name))
+        (= (type a-name) clojure.lang.Cons) `(sdoc* ~(str (second a-name))))))
 

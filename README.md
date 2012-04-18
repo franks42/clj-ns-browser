@@ -115,20 +115,26 @@ When you look at the source code of those vars in your local project, then the e
 
 * maybe makes more sense to select on functions/macros/classes than publics/interns/maps - especially for novice users (?)
 
+* integrate trace with browser
+
+* see if tools.namespace could be enhanced to get the (jar)file-name associated with a ns, which could give an indication of the version also (?)
+
+* make it a button/menu to use on/off-line clojuredocs-repo and to download/update the locally cached copy.
+
 ## Acknowledgment
 
 Seesaw and its main author Dave Ray - fantastic tool and near real-time support on the mailing list!
 
 (Seesaw turns the Horror of Swing into a friendly, well-documented, Clojure library: "https://github.com/daveray/seesaw")
 
-Andy Fingerhut for the suggestions and improvements - all I had to do was pull&merge - pls keep them coming!
+Andy Fingerhut has commit rights and uses them well - thanks for all the contributions!
 
-The clj-ns-browser depends on a whole bunch of opensource libraries: seesaw, clj-info, hiccup,  clojure-complete, cd-client, clojuredocs, swank-clojure, leiningen, ....and all the libs they depend on, ... and clojure of course.
+All the open source libraries that the clj-ns-browser depends on, like: seesaw, clj-info, hiccup,  clojure-complete, tools.namespace, cd-client, clojuredocs, swank-clojure, leiningen, lib.devlinsf.clip-utils....and all the libs they depend on, ... and clojure of course.
 
 
 ## License
 
-Copyright (C) 2011 - Frank Siebenlist
+Copyright (C) 2012 - Frank Siebenlist
 
 Distributed under the Eclipse Public License, the same as Clojure
 uses. See the file COPYING.

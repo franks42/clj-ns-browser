@@ -18,8 +18,46 @@
         [clj-info.doc2txt :only [doc2txt]]
         [clj-info.doc2html :only [doc2html]]))
 
+
+;; following three clipboard-related functions copied from lib.sfd.clip-utils of
+;; https://github.com/francoisdevlin/devlinsf-clojure-utils/
+;; library seems a little abandoned, but the following functions just work.
+;; Kudos to Sean Devlin.
+
+(defn- get-sys-clip
+  "A helper fn to get the clipboard object"
+  []
+  (. (java.awt.Toolkit/getDefaultToolkit) getSystemClipboard))
+
+(defn get-clip
+  "Get the contents of the clipboard.  Currently only supports text."
+  []
+  (let [clipboard (get-sys-clip)]
+    (if clipboard
+      (let [contents (. clipboard getContents nil)]
+	(cond
+	 (nil? contents) nil
+	 (not (. contents isDataFlavorSupported java.awt.datatransfer.DataFlavor/stringFlavor)) nil
+	 true (. contents getTransferData java.awt.datatransfer.DataFlavor/stringFlavor))))))
+
+(defn set-clip!
+  "Set the contents of the clipboard.  Currently only supports text."
+  [input-string]
+  (if input-string
+    (let [clipboard (get-sys-clip)]
+      (if clipboard
+	(do
+	  (let [selection (java.awt.datatransfer.StringSelection. input-string)]
+	    (. clipboard setContents selection nil))
+	  input-string)))))
+
+
+;;
+
 (def special-forms
   (sort (map name '[def if do let quote var fn loop recur throw try monitor-enter monitor-exit dot new set!])))
+
+(defn special-form? [n-str] (some #(= % n-str) special-forms))
 
 (defn ns-special-forms [& no-op]
   '{"def" def "if" if "do" do "let" let "quote" quote "var" var "fn" fn "loop" loop "recur" recur "throw" throw "try" try "monitor-enter" monitor-enter "monitor-exit" monitor-exit "dot" dot "new" new "set!" set!})
@@ -91,10 +129,6 @@
                       (str (.ns v-n) "/" (.sym v-n))
                       (.getName v-n))))))))))))
 
-(defn fqname-kw
-  "Returns the fqn-string for a keyword (without the ':')"
-  [k]
-  (if-let [n (namespace k)] (str n "/" (name k)) (name k)))
 
 (defn ns-name-class-str
   "Given a FQN, return the namespace and name in a list as separate strings.
@@ -122,6 +156,7 @@
       (when-let [var-or-class (try (resolve *ns* (symbol fqn))(catch Exception e))]
         var-or-class))))
 
+
 (defn pprint-str
   "Return string with pprint of v, and limit output to prevent blowup."
   ([v & kvs]
@@ -146,6 +181,7 @@
 ;; (val-kv-filter {} {:a true :b false :c true})
 ;; (val-kv-filter {:a "fn-a" :b "fn-b" :c "fn-c" :d "fn-d"} {})
 ;; (val-kv-filter {} {})
+
 
 (defn no-nils [coll] (filter #(not (nil? %)) coll))
 
@@ -271,6 +307,11 @@ clojuredocs for fqn"
            :else [:exception e]))))))
 
 
+(defn render-meta
+  [fqn is-ns?]
+  (let [m (meta fqn)]))
+
+
 (defn render-value
   [fqn is-ns?]
   (if is-ns?
@@ -359,6 +400,7 @@ clojuredocs for fqn"
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
         "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
         "Value" (render-value fqn is-ns?)
+        "Meta" (render-meta fqn is-ns?)
         (str "Internal error - clj-ns-browser.utils/render-doc-text got unknown doc-opt='" doc-opt "'")))))
 
 

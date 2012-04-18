@@ -8,11 +8,13 @@
 
 (ns clj-ns-browser.browser
   (:require [seesaw.selector]
+            [seesaw.dnd]
             [seesaw.bind :as b]
             [clojure.java.browse]
             [clojure.java.shell]
             [seesaw.meta]
-            [clojure.java.javadoc])
+            [clojure.java.javadoc]
+            [cd-client.core])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
         [seesaw.border]
@@ -21,7 +23,22 @@
         [clj-info]))
 
 
-;; general util fns
+(def clj-ns-browser-version "1.2.0-SNAPSHOT")
+
+
+;; forward declarations... ough that clojure compiler should be smarter...
+(declare new-clj-ns-browser)
+(declare get-clj-ns-browser)
+(declare browser-with-fqn)
+(declare refresh-clj-ns-browser)
+(declare get-next-clj-ns-browser)
+
+
+;; seesaw docs say to call this early
+(native!)
+
+
+;; convenience functions for seesaw interaction
 
 ;; Copied from seesaw example to generate :id's from externally build GUIs.
 ;; ("should" become part of seesaw.core...)
@@ -43,13 +60,64 @@
   (vec (apply sorted-set
     (map (fn [k] (symbol (name k)))(keys (group-by-id root))))))
 
-;;
 
-;; seesaw docs say to call this early
-(native!)
+(defn font-size+
+  "Increase the fint-size of the widget w by 1."
+  [w]
+  (config! w :font {:size (+ 1 (.getSize (config w :font)))}))
 
 
-;; constants and global maps
+(defn font-size-
+  "Decrease the fint-size of the widget w by 1."
+  [w]
+  (config! w :font {:size (- (.getSize (config w :font)) 1)}))
+
+
+;; constants and global maps shared by all seesaw widgets
+
+;; maintain all top-level browser frames in global list & map @browser-root-frms
+(declare browser-root-frm-map)
+(when-not (bound? #'browser-root-frm-map)
+  (def browser-root-frm-map (atom (sorted-map))))
+
+(declare browser-root-frms)
+(when-not (bound? #'browser-root-frms)
+  (def browser-root-frms (atom [])))
+
+
+(def app-action-map "Maintain all actions for the app in a global map with keyword-keys." (atom {}))
+
+(defn add-app-action
+  "Add the action \"actn\" to the global \"app-action-map\" with the key \"kw\".
+  Get the actions later thru the keyword: (get app-action-map kw).
+  See also select-id."
+  [kw actn]
+  (swap! app-action-map (fn [m k a] (assoc m k a)) kw actn))
+
+
+(defn select-id
+  "Convenience function for seesaw.core/select to identify a widget easily by its :id value.
+  When not found in widget-tree, looks into (seesaw.meta/get-meta root :atom-map).
+  Input: root - widget-root
+  Input: ss-id is keyword, symbol or string referring to widget :id value
+  Output: reference to widget with :id equal to ss-id
+  Usage: (select-id root :ns-lb))
+  or use with partial like: (let [id (partial select-id root)] (config (id :ns-lb) ...))"
+  [root ss-id]
+  (let [str-id (if (keyword? ss-id) (name ss-id) (str ss-id))]
+    (or
+      ;; first look in the root's tree for a widget with that :id of ss-id
+      (seesaw.core/select root [ (keyword (str "#" str-id)) ])
+      ;; next look in the root's atom-map for a matching root-specific atom
+      (when-let [m (seesaw.meta/get-meta root :atom-map)]
+        (get m (keyword str-id)))
+      ;; last look in the global app-action-map for a matching action
+      (when-let [actn (get @app-action-map (keyword str-id))] actn)
+      (do (println "id not found: " ss-id ) nil))))
+
+
+;; app specific constants
+
 
 (def ns-cbx-value-list ["loaded" "unloaded"])
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
@@ -65,7 +133,18 @@
                             "special-forms" ns-special-forms})
 
 (def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
-                         "Comments" "See alsos" "Value"])
+                         "Comments" "See alsos" "Value" "Meta"])
+
+(def all-buttons
+  "Used to auto-generate atoms and '-atom' keywords"
+  [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb :update-clojuredocs-btn :var-trace-btn])
+
+(defn make-atom-kw [kw] (keyword (str (clj-ns-browser.utils/fqname kw) "-atom")))
+
+(defn make-button-atom-map
+  [btn-list]
+  (let [btn-atom-kw-list (map make-atom-kw btn-list)]
+    (into {} (map (fn [k] [k (atom true)]) btn-atom-kw-list))))
 
 
 ;; "global" atoms
@@ -89,249 +168,311 @@
 
 
 (defn widget-model-count
-  "Return the number of items of widget w's model"
+  "Return the number of items of widget w's model - used to get number of items in a listbox"
   [_ w]
   (.getSize (config w :model)))
 
 
+;; Initial "global" action definitions shared by all browser instances
+
+;; actions to be used in the menus
+(add-app-action :new-browser-action
+  (action :name "New Browser (with selection/FQN)"
+          :key  "menu N"
+          :handler (fn [e]
+            (let [id (partial select-id (to-root e))]
+              (if-let [s (selection (id :doc-ta))]
+                (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
+                  (invoke-soon (browser-with-fqn "" fqn (new-clj-ns-browser))))
+                (if-let [fqn (config (id :doc-tf) :text)]
+                  (invoke-soon (browser-with-fqn "" fqn (new-clj-ns-browser)))
+                  (invoke-soon (new-clj-ns-browser))))))))
+
+(add-app-action :go-github-action
+  (action :name "Clj-NS-Browser GitHub..."
+          :handler (fn [a] (future (clojure.java.browse/browse-url
+            "https://github.com/franks42/clj-ns-browser")))))
+(add-app-action :go-clojure.org-action
+  (action :name "Clojure.org..."
+          :handler (fn [a] (future (clojure.java.browse/browse-url "http://clojure.org")))))
+(add-app-action :go-clojuredocs-action
+  (action :name "ClojureDocs..."
+          :handler (fn [a] (future (clojure.java.browse/browse-url "http://clojuredocs.org")))))
+(add-app-action :go-cheatsheet-action
+  (action :name "Clojure CheatSheet..."
+          :handler (fn [a] (future (clojure.java.browse/browse-url "http://homepage.mac.com/jafingerhut/files/cheatsheet-clj-1.3.0-v1.4-tooltips/cheatsheet-full.html")))))
+(add-app-action :go-jira-action
+  (action :name "JIRA..."
+          :handler (fn [a] (future (clojure.java.browse/browse-url
+            "http://dev.clojure.org/jira/browse/CLJ")))))
+(add-app-action :go-about-action
+  (action :name "About..."
+          :handler (fn [a] (invoke-later (alert (str "Clojure Namespace Browser (" clj-ns-browser-version ")" \newline
+            "Copyright (C) 2012 - Frank Siebenlist" \newline
+            "Distributed under the Eclipse Public License"))))))
+
+(add-app-action :zoom-in-action
+  (action :name "Zoom in"
+          :key  "menu U"
+          :handler (fn [e] (let [id (partial select-id (to-root e))](invoke-later (font-size+ (id :doc-ta)))))))
+(add-app-action :zoom-out-action
+  (action :name "Zoom out"
+          :key  "menu D"
+          :handler (fn [e] (let [id (partial select-id (to-root e))](invoke-later (font-size- (id :doc-ta)))))))
+(add-app-action :bring-all-windows-to-front-action
+  (action :name "Bring All to Front"
+          :handler (fn [e] (refresh-clj-ns-browser))))
+(add-app-action :cycle-through-windows-action
+  (action :name "Cycle Through Windows"
+          :key  "menu M"
+          :handler (fn [e] (refresh-clj-ns-browser (get-next-clj-ns-browser (to-root e))))))
+
+(add-app-action :copy-fqn-action
+  (action :name "Copy Selection/FQN"
+          :key  "menu C"
+          :handler (fn [e]
+            (let [id (partial select-id (to-root e))]
+              (if-let [s (selection (id :doc-ta))]
+                (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
+                  (set-clip! fqn))
+                (if-let [fqn (config (id :doc-tf) :text)]
+                  (set-clip! fqn)))))))
+(add-app-action :fqn-from-clipboard-action
+  (action :name "Paste - FQN from clipboard"
+          :key  "menu V"
+          :handler (fn [e] (if-let [fqn (get-clip)] (invoke-soon (browser-with-fqn "" fqn (to-root e)))))))
+(add-app-action :fqn-from-selection-action
+  (action :name "FQN from selection"
+          :key  "menu F"
+          :handler (fn [e]
+            (let [id (partial select-id (to-root e))]
+              (if-let [s (selection (id :doc-ta))]
+                (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
+                  (invoke-soon (browser-with-fqn "" fqn (to-root e)))))))))
+
+
+
+;; Init functions called during construction of a frame with its widget hierarchy
+
 (defn init-before-bind
   [root]
-  (let [atm-map {:ns-require-btn-atom (atom true)
-                 :browse-btn-atom (atom true)
-                 :edit-btn-atom (atom true)}
-        {:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
-                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb vars-lb-sp]}
-          (group-by-id root)
-        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
-          atm-map]
-    (let [l (select root [:#vars-lb-sp])]
-      (config! l :preferred-size (config l :size)))
-    (seesaw.meta/put-meta! root :atom-map atm-map)
+  (let [id (partial select-id root)]
+    (seesaw.meta/put-meta! root :atom-map (make-button-atom-map all-buttons))
+    (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     ;; ns
-    (config! ns-lb :model @all-ns-loaded-atom)
-    (config! vars-lb :model [])
-    (config! ns-entries-lbl :text "0")
-    (config! ns-require-btn :enabled? false)
-    (config! doc-cbx :model doc-cbx-value-list)
-    (config! edit-btn :enabled? false)
-    (config! browse-btn :enabled? false)
-    (config! var-trace-btn :enabled? false)
-    (listen ns-require-btn
-      :action (fn [event] (swap! ns-require-btn-atom not)))
-    (listen browse-btn
-      :action (fn [event] (swap! browse-btn-atom not)))
-    (listen edit-btn
-      :action (fn [event] (swap! edit-btn-atom not)))
+    (config! (id :ns-lb) :model @all-ns-loaded-atom)
+    (config! (id :vars-lb) :model [])
+    (config! (id :ns-entries-lbl) :text "0")
+    (config! (id :ns-require-btn) :enabled? false)
+    (config! (id :doc-cbx) :model doc-cbx-value-list)
+    (config! (id :edit-btn) :enabled? false)
+    (config! (id :browse-btn) :enabled? false)
+    (config! (id :var-trace-btn) :enabled? false)
+    (config! (id :clojuredocs-online-rb) :selected? true)
+    (listen (id :ns-require-btn)
+      :action (fn [event] (swap! (id :ns-require-btn-atom) not)))
+    (listen (id :browse-btn)
+      :action (fn [event] (swap! (id :browse-btn-atom) not)))
+    (listen (id :edit-btn)
+      :action (fn [event] (swap! (id :edit-btn-atom) not)))
+    (listen (id :clojuredocs-offline-rb)
+      :action (fn [event] (swap! (id :clojuredocs-offline-rb-atom) not)))
+    (listen (id :clojuredocs-online-rb)
+      :action (fn [event] (swap! (id :clojuredocs-online-rb-atom) not)))
     ;; vars
-    (config! vars-entries-lbl :text "0")
+    (config! (id :vars-entries-lbl) :text "0")
     ; doc
-    (config! doc-tf :text "")
-    (config! doc-ta :text "                                                                        ")
-    (selection! ns-cbx "loaded")
-    (selection! vars-cbx "publics")
-    (selection! vars-cbx "Doc")))
+    (config! (id :doc-tf) :text "")
+    (config! (id :doc-ta) :text "                                                                        ")
+    (selection! (id :ns-cbx) "loaded")
+    (selection! (id :vars-cbx) "publics")
+    (selection! (id :vars-cbx) "Doc")))
 
 
 (defn init-after-bind
   [root]
-  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
-                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb vars-lb-sp]}
-          (group-by-id root)
-        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
-          (seesaw.meta/get-meta root :atom-map)]
-    (invoke-soon (selection! ns-cbx "loaded"))
-    (invoke-soon (selection! vars-cbx "publics"))
-    (invoke-soon (selection! doc-cbx "Doc"))))
+  (let [id (partial select-id root)]
+    (invoke-soon
+      (selection! (id :ns-cbx) "loaded")
+      (selection! (id :vars-cbx) "publics")
+      (selection! (id :doc-cbx) "Doc"))))
 
 
 (defn bind-all
   "Collection of all the bind-statements that wire the clj-ns-browser events and widgets. (pretty amazing how easy it is to express those dependency-graphs!)"
   [root]
-  (let [{:keys [browse-btn doc-cbx doc-header-lbl doc-ta doc-ta-sp
-                doc-tf edit-btn ns-cbx ns-entries-lbl ns-filter-tf
-                ns-header-lbl ns-lb ns-lb-sp ns-require-btn root-panel
-                var-trace-btn vars-cbx vars-entries-lbl vars-filter-tf
-                vars-header-lbl vars-lb vars-lb-sp]}
-          (group-by-id root)
-        {:keys [ns-require-btn-atom browse-btn-atom edit-btn-atom]}
-          (seesaw.meta/get-meta root :atom-map)]
+  (let [id (partial select-id root)]
     ;; # of entries in ns-lb => ns-entries-lbl
     (b/bind
-      (b/property ns-lb :model)
-      (b/transform widget-model-count ns-lb)
-      ns-entries-lbl)
+      (b/property (id :ns-lb) :model)
+      (b/transform widget-model-count (id :ns-lb))
+      (id :ns-entries-lbl))
     ;; # of entries in vars-lb => vars-entries-lbl
     (b/bind
-      (b/property vars-lb :model)
-      (b/transform widget-model-count vars-lb)
-      vars-entries-lbl)
+      (b/property (id :vars-lb) :model)
+      (b/transform widget-model-count (id :vars-lb))
+      (id :vars-entries-lbl))
     ;; new ns selected in ns-lb =>
     ;; dis/enable require-btn, update fqn in doc-tf
     (b/bind
-      (b/selection ns-lb)
+      (b/selection (id :ns-lb))
         (b/tee
           (b/bind
             (b/transform (fn [ns]
               (if (and ns (some #(= ns %) @all-ns-unloaded-atom))
                 true
                 false)))
-            (b/property ns-require-btn :enabled?))
+            (b/property (id :ns-require-btn) :enabled?))
         (b/bind
           (b/transform (fn [ns]
             (if (and ns (find-ns (symbol ns)))
               (fqname ns)
               "")))
           (b/tee
-            (b/property doc-tf :text)))))
+            (b/property (id :doc-tf) :text)))))
     ;; require-btn pressed =>
     ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
     (b/bind
-      ns-require-btn-atom
+      (id :ns-require-btn-atom)
       (b/transform (fn [& b]
-        (when-let [n (selection ns-lb)]
+        (when-let [n (selection (id :ns-lb))]
           (require (symbol n))
           (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
           (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
           (let [i (.indexOf (seq @all-ns-loaded-atom) n)]
             (if (pos? i)
               (do
-                (selection! ns-cbx "loaded")
-                (selection! ns-lb n)
-                (scroll! ns-lb :to [:row i]))
+                (selection! (id :ns-cbx) "loaded")
+                (selection! (id :ns-lb) n)
+                (scroll! (id :ns-lb) :to [:row i]))
               (alert (str "Hmmm... seems that namespace \"" n "\" cannot be required (?)"))))))))
     ;;
     ;; select item in vars-lb => set associated fqn in doc-tf
     (b/bind
-      (b/selection vars-lb)
+      (b/selection (id :vars-lb))
       (b/transform (fn [v]
         (if v
-          (let [fqn (fqname (selection ns-lb) v)]
+          (let [fqn (fqname (selection (id :ns-lb)) v)]
             (if (and fqn (not= fqn ""))
               fqn
-              (when (= (selection vars-cbx) "aliases")
-                (when-let [n (get (ns-aliases (symbol (selection ns-lb))) (symbol v))]
+              (when (= (selection (id :vars-cbx)) "aliases")
+                (when-let [n (get (ns-aliases (symbol (selection (id :ns-lb)))) (symbol v))]
                   (str n))))))))
       (b/tee
-          (b/property doc-tf :text)))
+          (b/property (id :doc-tf) :text)))
     ;;
     ;; (un-)loaded ns-cbx and regex filter tf =>
     ;; updated ns-list in ns-lb
     (b/bind
       (apply b/funnel
-        [ns-cbx
-         ns-filter-tf])
+        [(id :ns-cbx)
+         (id :ns-filter-tf)])
       (b/transform (fn [o]
-        (let [v (selection ns-cbx)]
+        (let [v (selection (id :ns-cbx))]
           ((get ns-cbx-value-fn-map v)))))
-      (b/transform regx-tf-filter ns-filter-tf)
+      (b/transform regx-tf-filter (id :ns-filter-tf))
       (b/notify-soon)
-      (b/property ns-lb :model))
+      (b/property (id :ns-lb) :model))
     ;;
     ;; (un-)loaded vars-cbx and regex filter tf =>
     ;; updated vars-list in vars-lb
     (b/bind
       (apply b/funnel
-        [(b/selection vars-cbx)
-         (b/selection ns-lb)
-         vars-filter-tf])
+        [(b/selection (id :vars-cbx))
+         (b/selection (id :ns-lb))
+         (id :vars-filter-tf)])
       (b/transform (fn [o]
-        (let [n-s (selection ns-lb)
+        (let [n-s (selection (id :ns-lb))
               n (and n-s (find-ns (symbol n-s)))
-              v (selection vars-cbx)
+              v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (if n
             (seq (sort (map str (keys (f n)))))
             []))))
-      (b/transform regx-tf-filter vars-filter-tf)
+      (b/transform regx-tf-filter (id :vars-filter-tf))
       (b/notify-soon)
-      (b/property vars-lb :model))
+      (b/property (id :vars-lb) :model))
     ;;
     ;; typed regex in ns-filter-tf => visual feedback about validity
     (b/bind
       ; As the text of the textbox changes ...
-      ns-filter-tf
+      (id :ns-filter-tf)
       ; Convert it to a regex, or nil if it's invalid
       (b/transform #(try (re-pattern %) (catch Exception e nil)))
       ; Now split into two paths ...
       (b/bind
         (b/transform #(if % "white" "lightcoral"))
         (b/notify-soon)
-        (b/property ns-filter-tf :background)))
+        (b/property (id :ns-filter-tf) :background)))
     ;;
     ;; typed regex in ns-filter-tf => visual feedback about validity
     (b/bind
       ; As the text of the textbox changes ...
-      vars-filter-tf
+      (id :vars-filter-tf)
       ; Convert it to a regex, or nil if it's invalid
       (b/transform #(try (re-pattern %) (catch Exception e nil)))
       ; Now split into two paths ...
       (b/bind
         (b/transform #(if % "white" "lightcoral"))
         (b/notify-soon)
-        (b/property vars-filter-tf :background)))
+        (b/property (id :vars-filter-tf) :background)))
     ;;
     ;; updated fqn in doc-tf or doc-cbx =>
     ;; new render-doc-text in doc-ta
     (b/bind
       ; As the text of the fqn text field changes ...
-      (apply b/funnel [doc-tf doc-cbx])
+      (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
       (b/filter (fn [o] (not (or (nil? (first o)) (= "" (first o))
                                  (nil? (second o))(= "" (second o))))))
       (b/transform
         (fn [o]
           (future
             (let [s (render-doc-text (first o) (second o))]
-              (invoke-soon (config! doc-ta :text s)))))))
+              (invoke-soon (config! (id :doc-ta) :text s)))))))
     ;;
     ;; new text in doc-ta => scroll to top
     (b/bind
-      doc-ta
+      (id :doc-ta)
       (b/notify-later)
-      (b/transform (fn [t] (scroll! doc-ta :to :top))))
+      (b/transform (fn [t] (scroll! (id :doc-ta) :to :top))))
     ;;
     ;; new text in doc-ta => dis/enable browser button
     (b/bind
-      doc-ta
-      (b/transform (fn [o] (selection doc-cbx)))
+      (id :doc-ta)
+      (b/transform (fn [o] (selection (id :doc-cbx))))
       (b/transform (fn [o]
         (case o
-          "Doc" (invoke-soon (config! browse-btn :enabled? true))
+          "Doc" (invoke-soon (config! (id :browse-btn) :enabled? true))
 
           ("All" "Examples" "See alsos" "Comments")
-          (if-let [fqn (config doc-tf :text)]
+          (if-let [fqn (config (id :doc-tf) :text)]
             (future
               (let [url (clojuredocs-url fqn)
                     r (if url true false)]
                 (invoke-soon
-                 (config! browse-btn :enabled? r)))))
+                 (config! (id :browse-btn) :enabled? r)))))
 
           nil))))  ; do nothing if no match
     ;
     (b/bind
-      (apply b/funnel [doc-tf doc-cbx])
-      (b/transform (fn [o] (selection doc-cbx)))
+      (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
+      (b/transform (fn [o] (selection (id :doc-cbx))))
       (b/transform (fn [o] (if (= "Source" o) true false)))
       (b/transform (fn [o]
-        (when o (if (meta-when-file (config doc-tf :text))
+        (when o (if (meta-when-file (config (id :doc-tf) :text))
                   true
                   false))))
       (b/notify-soon)
-      (b/property edit-btn :enabled?))
+      (b/property (id :edit-btn) :enabled?))
     ;
       ;; browser-btn pressed =>
     ;; bring up browser with url
     (b/bind
-      browse-btn-atom
+      (id :browse-btn-atom)
       (b/notify-soon)
       (b/transform (fn [& oo]
-        (let [o (selection doc-cbx)]
-          (when-let [fqn (config doc-tf :text)]
+        (let [o (selection (id :doc-cbx))]
+          (when-let [fqn (config (id :doc-tf) :text)]
             (future
               (case o
                 "Doc" (bdoc* fqn)
@@ -345,44 +486,124 @@
     ;; edit-btn pressed =>
     ;; if we find a local file (not inside jar), then send to $EDITOR.
     (b/bind
-      edit-btn-atom
+      (id :edit-btn-atom)
       (b/transform (fn [& o]
         (future
-          (when-let [m (meta-when-file (config doc-tf :text))]
+          (when-let [m (meta-when-file (config (id :doc-tf) :text))]
             (when-let [e (:out (clojure.java.shell/sh "bash" "-c" (str "echo -n $EDITOR")))]
               (:exit (clojure.java.shell/sh "bash" "-c" (str e " +" (:line m) " " (:file m))))))))))
+    ;
+    ; menu buttons
+    ;;
+    ; use local copy for clojuredocs lookup of comments/examples
+    (b/bind
+      (b/funnel
+        (id :clojuredocs-offline-rb-atom)
+        (id :clojuredocs-online-rb-atom))
+      (b/transform (fn [& o]
+        (if (config (id :clojuredocs-offline-rb) :selected?)
+          (let [f (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt")]
+            (if (= 0 (:exit (clojure.java.shell/sh "bash" "-c" (str "[ -f " f " ];" ))))
+              (let [s (with-out-str (cd-client.core/set-local-mode! f))]
+                (alert (str "Note: Locally cached ClojureDocs copy will be used" \newline s)))
+              (do (alert "No locally cached ClojureDocs repo found - update first")
+                  (config! (id :clojuredocs-online-rb) :selected? true))))
+            (let [s (with-out-str (cd-client.core/set-web-mode!))]
+                (alert (str "Note: Online ClojureDocs will be used" \newline s)))))))
+    ;;
+    ; update locally cached clojuredocs repo
+    (b/bind
+      (id :update-clojuredocs-btn-atom)
+      (b/transform (fn [& o]
+        (invoke-later
+          (let [f (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt")]
+            (spit f (slurp
+        "https://raw.github.com/jafingerhut/cd-client/develop/snapshots/clojuredocs-snapshot-latest.txt"))
+            (alert (str "Locally cached copy of ClojureDocs updated at:" \newline f)))))))
     ;;
     )) ; end of bind-all
 
 
+
+;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
+;;(seesaw.dev/show-options) and (seesaw.dev/show-events)
+(defn init-menu-before-bind
+  "Built menu for given browser-root-frame.
+  Note that each frame has its own menu, which will be active when frame is in-focus."
+  [root]
+  (let [;;root (frame :id :fake-root)
+        id (partial select-id root)]
+
+    ;; built-up menu-bar
+    (let [main-menu (menubar :id :main-menu)
+          edit-menu (menu :text "Edit"  :id :edit-menu)
+          file-menu (menu :text "File"  :id :file-menu)
+          ns-menu (menu :text "Namespace" :id :ns-menu)
+          vars-menu (menu :text "Var" :id :vars-menu)
+          docs-menu (menu :text "Doc" :id :docs-menu)
+          clojuredocs-menu (menu :text "ClojureDocs" :id :clojuredocs-menu)
+          window-menu (menu :text "Window" :id :window-menu)
+          help-menu (menu :text "Help"  :id :help-menu)
+
+          update-clojuredocs (menu-item :text "ClojureDocs Update local repo" :id :update-clojuredocs-btn)
+          clojuredocs-access-btn-group (button-group)
+          clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
+          clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
+
+          ]
+      (config! root :menubar main-menu)
+
+      (config! main-menu
+        :items [file-menu edit-menu ns-menu vars-menu docs-menu window-menu help-menu])
+
+      (config! file-menu :items [(id :new-browser-action)])
+
+      (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
+                                 (id :fqn-from-selection-action)])
+
+      (config! ns-menu :items ["Load" "Trace"])
+
+      (config! vars-menu :items ["Trace" "Unmap"])
+
+      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) "---"
+        (id :bring-all-windows-to-front-action) (id :cycle-through-windows-action)])
+
+      (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-jira-action) (id :go-about-action)])
+      (config! docs-menu :items [update-clojuredocs "-------------"
+                                 clojuredocs-online-rb clojuredocs-offline-rb
+                                 "-------------"])
+      )))
+
 ;; init and browser-window management
 
-(declare browser-root-frms)
-(when-not (bound? #'browser-root-frms)
-  (def browser-root-frms (atom [])))
 
 
 (defn refresh-clj-ns-browser
   "Refresh all or the given browser-window (pack! and show!)"
 ;;   ([] (map #(invoke-later (show! (pack! %))) @browser-root-frms))
 ;;   ([root] (invoke-later (show! (pack! root)))))
-  ([] (map #(invoke-later (show! %)) @browser-root-frms))
-  ([root] (invoke-later (show! root))))
+  ([] (doall (map #(invoke-soon (show! %)) @clj-ns-browser.browser/browser-root-frms)))
+  ([root] (invoke-soon (show! root))))
 
 
 (defn new-clj-ns-browser
   "Returns a new browser root frame with an embedded browser form.
   Add new frame to atom-list browser-root-frms"
   []
-  (let [root (frame :title "Clojure Namespace Browser")
+  (let [root (frame)
         b-form (identify (clj_ns_browser.BrowserForm.))]
-        ;;b-form (identify (clj_ns_browser.BrowserFormHTML.))]
     (config! root :content b-form)
     (pack! root)
+    (init-menu-before-bind root)
     (init-before-bind root)
     (bind-all root)
     (init-after-bind root)
     (swap! browser-root-frms (fn [a] (conj @browser-root-frms root)))
+    (config! root :title (str "Clojure Namespace Browser - " (.indexOf @browser-root-frms root)))
+    (config! root :id (keyword (str "browser-frame-" (.indexOf @browser-root-frms root))))
+    (swap! browser-root-frm-map (fn [a] (assoc @browser-root-frm-map (config root :id) root)))
+    (config! root :transfer-handler (seesaw.dnd/default-transfer-handler
+      :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn "" data root))]))
     (refresh-clj-ns-browser root)
     root))
 
@@ -391,7 +612,50 @@
   "Returns the first browser root frame from browser-root-frms,
   or if none, create one first."
   []
-  (if-let [root (first @browser-root-frms)]
-    root
-    (new-clj-ns-browser)))
+  (or (first @browser-root-frms) (new-clj-ns-browser)))
 
+(defn get-next-clj-ns-browser
+  [root]
+  (if-let [i (.indexOf @browser-root-frms root)]
+    (if (> (count @browser-root-frms) (inc i))
+      (nth @browser-root-frms (inc i))
+      (nth @browser-root-frms 0))))
+
+(defn browser-with-fqn
+  "Display a-ns/a-name in browser-frame."
+  ([a-ns a-name] (browser-with-fqn a-ns a-name (get-clj-ns-browser)))
+  ([a-ns a-name browser-frame]
+    (let [root browser-frame
+          id (partial select-id root)]
+      (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
+        (let [sym1 (symbol fqn)
+              name1 (name sym1)
+              ns1 (try (namespace sym1)(catch Exception e))]
+          (if ns1
+            ;; we have a fq-var as a-ns/a-name
+            (invoke-soon
+              (selection! (id :ns-cbx) "loaded")
+              (selection! (id :ns-lb) ns1)
+              (selection! (id :vars-cbx) "publics")
+              (selection! (id :vars-lb) name1))
+            (if (find-ns (symbol name1))
+              ;; should be namespace
+              (invoke-soon
+                (selection! (id :ns-lb) name1)
+                (selection! (id :doc-cbx) "Doc"))
+              ;; else must be special-form or class
+              (invoke-soon
+                (if (special-form? fqn)
+                  (do
+                    (selection! (id :ns-cbx) "loaded")
+                    (selection! (id :ns-lb) (str *ns*))
+                    (selection! (id :vars-cbx) "special-forms")
+                    (selection! (id :vars-lb) name1))
+                  (do
+                    (selection! (id :ns-lb) (str *ns*))
+                    (selection! (id :doc-cbx) "Doc"))))))
+            (refresh-clj-ns-browser root)
+          fqn)))))
+
+
+;;(init-menu-before-bind)
