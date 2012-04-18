@@ -12,6 +12,7 @@
             [seesaw.bind :as b]
             [clojure.java.browse]
             [clojure.java.shell]
+            [clj-ns-browser.inspector]
             [seesaw.meta]
             [clojure.java.javadoc]
             [cd-client.core])
@@ -122,22 +123,26 @@
 (def ns-cbx-value-list ["loaded" "unloaded"])
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
-(def vars-cbx-value-list ["aliases" "imports" "interns"
-                          "map" "publics" "refers" "special-forms"])
+(def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
+                          "refers" "special-forms" "all-publics"
+                          "search-all-docs"])
 (def vars-cbx-value-fn-map {"aliases"   ns-aliases
                             "imports"   ns-imports
                             "interns"   ns-interns
                             "map"       ns-map
                             "publics"   ns-publics
                             "refers"    ns-refers
-                            "special-forms" ns-special-forms})
+                            "special-forms" ns-special-forms
+                            "all-publics" all-publics
+                            "search-all-docs"  identity  ; ret value not used
+                            })
 
 (def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
                          "Comments" "See alsos" "Value" "Meta"])
 
 (def all-buttons
   "Used to auto-generate atoms and '-atom' keywords"
-  [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb :update-clojuredocs-btn :var-trace-btn])
+  [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb :update-clojuredocs-btn :var-trace-btn :inspect-btn])
 
 (defn make-atom-kw [kw] (keyword (str (clj-ns-browser.utils/fqname kw) "-atom")))
 
@@ -162,9 +167,23 @@
 ;;(b/transform regx-tf-filter :ns-filter-tf)
 (defn regx-tf-filter
   "filter for use in bind that filters string-list s-l with regex of text-field t-f"
-  [s-l t-f]
-  (when-let [r (try (re-pattern (config t-f :text)) (catch Exception e nil))]
-    (filter #(re-find r %) s-l)))
+  [{:keys [string-seq already-filtered]} t-f]
+  (if already-filtered
+    string-seq
+    (when-let [r (try (re-pattern (config t-f :text)) (catch Exception e nil))]
+      (filter #(re-find r %) string-seq))))
+
+
+(defn find-in-doc-strings
+  [pat-in-str]
+  (when-let [r (try (re-pattern pat-in-str)
+                    (catch Exception e nil))]
+    (->> (all-ns)
+         (mapcat #(map meta (vals (ns-interns %))))
+         (filter #(and (:doc %)
+                       (or (re-find r (:doc %))
+                           (re-find r (str (:name %))))))
+         (map #(str (:ns %) "/" (:name %))))))
 
 
 (defn widget-model-count
@@ -269,6 +288,9 @@
     (config! (id :browse-btn) :enabled? false)
     (config! (id :var-trace-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
+    (config! (id :inspect-btn) :enabled? false)
+    (listen (id :inspect-btn)
+      :action (fn [event] (swap! (id :inspect-btn-atom) not)))
     (listen (id :ns-require-btn)
       :action (fn [event] (swap! (id :ns-require-btn-atom) not)))
     (listen (id :browse-btn)
@@ -369,7 +391,7 @@
          (id :ns-filter-tf)])
       (b/transform (fn [o]
         (let [v (selection (id :ns-cbx))]
-          ((get ns-cbx-value-fn-map v)))))
+          {:already-filtered false :string-seq ((get ns-cbx-value-fn-map v))})))
       (b/transform regx-tf-filter (id :ns-filter-tf))
       (b/notify-soon)
       (b/property (id :ns-lb) :model))
@@ -387,8 +409,13 @@
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (if n
-            (seq (sort (map str (keys (f n)))))
-            []))))
+            (if (= v "search-all-docs")
+              {:already-filtered true
+               :string-seq (seq (sort (find-in-doc-strings
+                                      (config (id :vars-filter-tf) :text))))}
+              {:already-filtered false
+               :string-seq (seq (sort (map str (keys (f n)))))})
+            {:already-filtered false :string-seq []}))))
       (b/transform regx-tf-filter (id :vars-filter-tf))
       (b/notify-soon)
       (b/property (id :vars-lb) :model))
@@ -405,7 +432,7 @@
         (b/notify-soon)
         (b/property (id :ns-filter-tf) :background)))
     ;;
-    ;; typed regex in ns-filter-tf => visual feedback about validity
+    ;; typed regex in vars-filter-tf => visual feedback about validity
     (b/bind
       ; As the text of the textbox changes ...
       (id :vars-filter-tf)
@@ -442,9 +469,9 @@
       (b/transform (fn [o] (selection (id :doc-cbx))))
       (b/transform (fn [o]
         (case o
-          "Doc" (invoke-soon (config! (id :browse-btn) :enabled? true))
+          ("All" "Doc") (invoke-soon (config! (id :browse-btn) :enabled? true))
 
-          ("All" "Examples" "See alsos" "Comments")
+          ("Examples" "See alsos" "Comments")
           (if-let [fqn (config (id :doc-tf) :text)]
             (future
               (let [url (clojuredocs-url fqn)
@@ -453,11 +480,11 @@
                  (config! (id :browse-btn) :enabled? r)))))
 
           nil))))  ; do nothing if no match
-    ;
+    ;;
     (b/bind
       (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
       (b/transform (fn [o] (selection (id :doc-cbx))))
-      (b/transform (fn [o] (if (= "Source" o) true false)))
+      (b/transform (fn [o] (if (get #{"Source" "All"} o) true false)))
       (b/transform (fn [o]
         (when o (if (meta-when-file (config (id :doc-tf) :text))
                   true
@@ -465,7 +492,23 @@
       (b/notify-soon)
       (b/property (id :edit-btn) :enabled?))
     ;
-      ;; browser-btn pressed =>
+    ;; browser-btn pressed =>
+    ;;
+    (b/bind
+      (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
+      (b/transform (fn [[doc-tf doc-cbx]] [(config (id :doc-tf) :text) (selection (id :doc-cbx))]))
+      (b/transform (fn [[fqn doc-cbx-sel]]
+                     (if (get #{"Value" "All"} doc-cbx-sel) fqn false)))
+      (b/transform (fn [fqn]
+        (when fqn
+          (let [sym (better-symbol fqn)
+                [status val] (eval-sym sym)]
+            (when (and (= status :eval-ok)
+                       (coll? val))
+              true)))))
+      (b/notify-soon)
+      (b/property (id :inspect-btn) :enabled?))
+    ;;
     ;; bring up browser with url
     (b/bind
       (id :browse-btn-atom)
@@ -475,9 +518,9 @@
           (when-let [fqn (config (id :doc-tf) :text)]
             (future
               (case o
-                "Doc" (bdoc* fqn)
+                ("All" "Doc") (bdoc* fqn)
 
-                ("All" "Examples" "See alsos" "Comments")
+                ("Examples" "See alsos" "Comments")
                 (when-let [url (clojuredocs-url fqn)]
                   (clojure.java.browse/browse-url url))
 
@@ -520,6 +563,20 @@
             (spit f (slurp
         "https://raw.github.com/jafingerhut/cd-client/develop/snapshots/clojuredocs-snapshot-latest.txt"))
             (alert (str "Locally cached copy of ClojureDocs updated at:" \newline f)))))))
+    ;;
+    ;; inspect-btn pressed =>
+    ;; If var is selected and its value is a collection, create inspector.
+    (b/bind
+      (id :inspect-btn-atom)
+      (b/transform (fn [& o]
+        (when-let [fqn (config (id :doc-tf) :text)]
+          (let [sym (better-symbol fqn)
+                [status val] (eval-sym sym)]
+            (when (and (= status :eval-ok)
+                       (coll? val))
+              (future
+                (clj-ns-browser.inspector/inspect-tree
+                 val (str "Inspector for value of " fqn)))))))))
     ;;
     )) ; end of bind-all
 
@@ -657,5 +714,3 @@
             (refresh-clj-ns-browser root)
           fqn)))))
 
-
-;;(init-menu-before-bind)

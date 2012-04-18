@@ -36,6 +36,7 @@ public class BrowserForm extends JPanel {
 	private JTextField txtNsFilter;
 	private JTextField txtVarsFilter;
 	private JTextField txtClojurecoremap;
+	static private final String fontName = "Monospaced";
 
 	/**
 	 * Create the panel.
@@ -87,7 +88,7 @@ public class BrowserForm extends JPanel {
 		JLabel lblDocumentation = new JLabel("Documentation");
 		lblDocumentation.setName("doc-header-lbl");
 		lblDocumentation.setFont(new Font("Lucida Grande", Font.BOLD, 15));
-		add(lblDocumentation, "cell 5 0,alignx center");
+		add(lblDocumentation, "cell 5 0 2 1,alignx center");
 		
 		JComboBox comboBox_1 = new JComboBox();
 		comboBox_1.setName("ns-cbx");
@@ -95,33 +96,33 @@ public class BrowserForm extends JPanel {
 		add(comboBox_1, "cell 1 1");
 		
 		JComboBox comboBox = new JComboBox();
-		comboBox.setModel(new DefaultComboBoxModel(new String[] {"publics", "interns", "refers", "imports", "map", "aliases", "special-forms"}));
+		comboBox.setModel(new DefaultComboBoxModel(new String[] {"publics", "interns", "refers", "imports", "map", "aliases", "special-forms", "all-publics", "search-all-docs"}));
 		comboBox.setName("vars-cbx");
 		add(comboBox, "cell 3 1");
 		
 		JComboBox comboBox_2 = new JComboBox();
 		comboBox_2.setName("doc-cbx");
 		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Examples", "See alsos", "Comments", "Source", "Value"}));
-		add(comboBox_2, "cell 5 1");
+		add(comboBox_2, "cell 5 1 2 1");
 		
 		txtNsFilter = new JTextField();
 		txtNsFilter.setName("ns-filter-tf");
-		txtNsFilter.setFont(new Font("Inconsolata", Font.PLAIN, 13));
+		txtNsFilter.setFont(new Font(fontName, Font.PLAIN, 13));
 		add(txtNsFilter, "cell 0 2 3 1,growx");
 		txtNsFilter.setColumns(10);
 		
 		txtVarsFilter = new JTextField();
 		txtVarsFilter.setName("vars-filter-tf");
-		txtVarsFilter.setFont(new Font("Inconsolata", Font.PLAIN, 13));
+		txtVarsFilter.setFont(new Font(fontName, Font.PLAIN, 13));
 		add(txtVarsFilter, "cell 3 2 2 1,growx");
 		txtVarsFilter.setColumns(10);
 		
 		txtClojurecoremap = new JTextField();
-		txtClojurecoremap.setFont(new Font("Inconsolata", Font.BOLD, 15));
+		txtClojurecoremap.setFont(new Font(fontName, Font.BOLD, 15));
 		txtClojurecoremap.setName("doc-tf");
 		txtClojurecoremap.setEditable(false);
 		txtClojurecoremap.setText("clojure.core/map");
-		add(txtClojurecoremap, "cell 5 2,growx");
+		add(txtClojurecoremap, "cell 5 2 2 1,growx");
 		txtClojurecoremap.setColumns(10);
 		
 		JScrollPane scrollPane = new JScrollPane();
@@ -132,7 +133,7 @@ public class BrowserForm extends JPanel {
 		scrollPane.setViewportView(list);
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setName("ns-lb");
-		list.setFont(new Font("Inconsolata", Font.PLAIN, 13));
+		list.setFont(new Font(fontName, Font.PLAIN, 13));
 		list.setModel(new AbstractListModel() {
 			String[] values = new String[] {"clojure.core", "clj.growlnitify.core", "123456789012345678901234567890123456"};
 			public int getSize() {
@@ -148,7 +149,7 @@ public class BrowserForm extends JPanel {
 		add(scrollPane_1, "cell 3 3 2 1,grow");
 		
 		JList list_1 = new JList();
-		list_1.setFont(new Font("Inconsolata", Font.PLAIN, 13));
+		list_1.setFont(new Font(fontName, Font.PLAIN, 13));
 		list_1.setModel(new AbstractListModel() {
 			String[] values = new String[] {"123456789012345678901234567890123456", "2", "3", "4", "5", "6", "7", "8", "9", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
 			public int getSize() {
@@ -164,18 +165,18 @@ public class BrowserForm extends JPanel {
 		
 		JScrollPane scrollPane_2 = new JScrollPane();
 		scrollPane_2.setName("doc-ta-sp");
-		add(scrollPane_2, "cell 5 3,grow");
+		add(scrollPane_2, "cell 5 3 3 1,grow");
 		
 		JTextArea txtrDocArea = new JTextArea();
 		scrollPane_2.setViewportView(txtrDocArea);
 		txtrDocArea.setEditable(false);
 		txtrDocArea.setName("doc-ta");
-		txtrDocArea.setFont(new Font("Inconsolata", Font.PLAIN, 14));
+		txtrDocArea.setFont(new Font(fontName, Font.PLAIN, 14));
 		txtrDocArea.setText("Doc Area\n123456789012345678901234567890123456789012345678901234567890123456789012\n---------------------maximum width ruler------------------------------");
 		
 		JLabel lblnsentries = new JLabel("9999");
 		lblnsentries.setName("ns-entries-lbl");
-		lblnsentries.setFont(new Font("Inconsolata", Font.BOLD, 12));
+		lblnsentries.setFont(new Font(fontName, Font.BOLD, 12));
 		add(lblnsentries, "cell 0 4 2 1,alignx left");
 		
 		JButton btnRequire = new JButton("require");
@@ -184,20 +185,24 @@ public class BrowserForm extends JPanel {
 		
 		JLabel lblvarsentries = new JLabel("9999");
 		lblvarsentries.setName("vars-entries-lbl");
-		lblvarsentries.setFont(new Font("Inconsolata", Font.BOLD, 12));
+		lblvarsentries.setFont(new Font(fontName, Font.BOLD, 12));
 		add(lblvarsentries, "cell 3 4,alignx left");
 		
 		JButton btnTrace = new JButton("trace");
 		btnTrace.setName("var-trace-btn");
 		add(btnTrace, "cell 4 4");
 		
+		JButton btnInspect = new JButton("Inspect Coll");
+		btnInspect.setName("inspect-btn");
+		add(btnInspect, "flowx,cell 5 4,alignx right");
+		
 		JButton btnEdit = new JButton("Edit");
 		btnEdit.setName("edit-btn");
-		add(btnEdit, "flowx,cell 5 4,alignx right");
+		add(btnEdit, "flowx,cell 6 4,alignx right");
 		
 		JButton btnBrowse = new JButton("Browse");
 		btnBrowse.setName("browse-btn");
-		add(btnBrowse, "cell 5 4,alignx right");
+		add(btnBrowse, "cell 6 4,alignx right");
 
 	}
 	private static void addPopup(Component component, final JPopupMenu popup) {
