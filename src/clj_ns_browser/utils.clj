@@ -7,8 +7,7 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.utils
-  (:require [cljsh.completion]
-            [clojure.set]
+  (:require [clojure.set]
             [cd-client.core]
             [clojure.java.shell]
             [clojure.string :as str]
@@ -74,10 +73,6 @@
   []
   (apply sorted-set
     (map str (clojure.tools.namespace/find-namespaces-on-classpath))))
-;;   (apply sorted-set
-;;     (map  (comp cljsh.completion/class-or-ns-name :name)
-;;           (filter cljsh.completion/clojure-ns?
-;;             cljsh.completion/available-classes))))
 
 
 (defn all-ns-loaded
@@ -105,14 +100,6 @@
   (let [nss (str ns)] (get (all-ns-unloaded) nss)))
 
 
-;; "clojure.core//" appears to be a special case not handled well by
-;; the function symbol.
-(defn better-symbol [fqn]
-  (if (= fqn "clojure.core//")
-    (symbol "clojure.core" "/")
-    (symbol fqn)))
-
-
 (defn fqname
   "Returns the fully qualified name-string of a var, class or ns
   for a name n within an (optional) namespace, which may or
@@ -127,7 +114,7 @@
           :else (fqname *ns* n)))
   ([ns n]
     (let [n-str (str n)
-          n-sym (better-symbol n-str)]
+          n-sym (symbol n-str)]
       (if (some #(= % n-str) special-forms) n-str
         (if-let [n-ns (find-ns n-sym)]
           (str n-ns)
@@ -138,7 +125,7 @@
                                (find-ns (symbol (str ns))))]
               (if-let [var-n (when (var? n) (str (.ns n) "/" (.sym n)))]
                 var-n
-                (let [n-sym (better-symbol (str n))]
+                (let [n-sym (symbol (str n))]
                   (when-let [v-n (try (ns-resolve ns-ns n-sym)(catch Exception e))]
                     (if (var? v-n)
                       (str (.ns v-n) "/" (.sym v-n))
@@ -297,6 +284,14 @@ clojuredocs for fqn"
 ;; (in-ns 'clj-ns-browser.utils)
 
 
+;; "clojure.core//" appears to be a special case not handled well by
+;; the function symbol.
+(defn better-symbol [fqn]
+  (if (= fqn "clojure.core//")
+    (symbol "clojure.core" "/")
+    (symbol fqn)))
+
+
 (defn eval-sym [sym]
   (if (special-symbol? sym)
     [:special-symbol nil]
@@ -367,7 +362,7 @@ clojuredocs for fqn"
   "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt]
   (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt))
-    (let [is-ns? (find-ns (better-symbol fqn))]
+    (let [is-ns? (find-ns (symbol fqn))]
       (case doc-opt
         ;; quick to write, if a little inefficient
         "All" (if is-ns?
@@ -414,9 +409,9 @@ clojuredocs for fqn"
 (defn clojuredocs-url
   "Returns the clojuredoc url for given FQN"
   [fqn]
-  (let [[ns-str name-str] (ns-name-class-str fqn)]
-    (when (and ns-str name-str)
-      (:url (cd-client.core/examples ns-str name-str)))))
+  (let [r (ns-name-class-str fqn)]
+    (when (and (first r)(second r))
+      (:url (cd-client.core/examples (first r) (second r))))))
 
 (defn meta-when-file
   "Returns the path to the source file for fqn,

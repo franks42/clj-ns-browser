@@ -5,7 +5,6 @@
                  [org.clojure/tools.namespace "0.1.2"]
                  [clj-info "0.2.3-SNAPSHOT"]
                  [hiccup "0.3.8"]
-                 [lein-repls "1.9.7"]
                  [org.clojure/tools.trace "0.7.3"]
                  [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
                  [org.thnetos/cd-client "0.3.4"]]
