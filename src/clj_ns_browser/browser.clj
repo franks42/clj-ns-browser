@@ -24,6 +24,21 @@
         [clj-info]))
 
 
+;; Much of the processing depends on selecting widgets/atoms/actions from frame-trees.
+;; to ease the selection, the function (select-id root kw) is used, which looks up
+;; the widget/action/atom in root associated with keyword kw.
+;; because a lot of the processing is done for a certain root, the select-id function
+;; is curried often like (let [id (partial select-id root)] ...), such
+;; that within the let form, the widgets can be selected with (id kw)
+;; note that the actions that are searched for with select-id are maintained in
+;; the global app-action-map and actions are added with (add-app-action kw actn)
+;; the atoms associated with buttons are maintained in a map stored in the user-data
+;; of a frame - as long as you maintain the buttons in the var "all-buttons-with-atoms"
+;; then the atoms are auto-generated and can be accessed with select-id with the
+;; same keyword as the button but with"-atom" appended
+
+
+
 (def clj-ns-browser-version "1.2.0-SNAPSHOT")
 
 
@@ -140,7 +155,7 @@
 (def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
                          "Comments" "See alsos" "Value" "Meta"])
 
-(def all-buttons
+(def all-buttons-with-atoms
   "Used to auto-generate atoms and '-atom' keywords"
   [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb :update-clojuredocs-btn :var-trace-btn :inspect-btn])
 
@@ -276,7 +291,7 @@
 (defn init-before-bind
   [root]
   (let [id (partial select-id root)]
-    (seesaw.meta/put-meta! root :atom-map (make-button-atom-map all-buttons))
+    (seesaw.meta/put-meta! root :atom-map (make-button-atom-map all-buttons-with-atoms))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     ;; ns
     (config! (id :ns-lb) :model @all-ns-loaded-atom)
@@ -449,12 +464,13 @@
     (b/bind
       ; As the text of the fqn text field changes ...
       (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
-      (b/filter (fn [o] (not (or (nil? (first o)) (= "" (first o))
-                                 (nil? (second o))(= "" (second o))))))
+      (b/filter (fn [[doc-tf doc-cbx]]
+                  (not (or (nil? doc-tf)  (= "" doc-tf)
+                           (nil? doc-cbx) (= "" doc-cbx)))))
       (b/transform
-        (fn [o]
+        (fn [[doc-tf doc-cbx]]
           (future
-            (let [s (render-doc-text (first o) (second o))]
+            (let [s (render-doc-text doc-tf doc-cbx)]
               (invoke-soon (config! (id :doc-ta) :text s)))))))
     ;;
     ;; new text in doc-ta => scroll to top
@@ -622,7 +638,7 @@
 
       (config! vars-menu :items ["Trace" "Unmap"])
 
-      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) "---"
+      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) "-------------"
         (id :bring-all-windows-to-front-action) (id :cycle-through-windows-action)])
 
       (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-jira-action) (id :go-about-action)])

@@ -1,6 +1,6 @@
 # clj-ns-browser
 
-Smalltalk-like namespace/class/var/function browser for Clojure's on-line docs, source-code, clojuredocs-examples & comments, based on seesaw.
+Smalltalk-like namespace/class/var/function browser for Clojure-code's doc-strings, source-code, clojuredocs-examples & comments, pprint'ing of values based on seesaw.
 
 Look for the last released version on clojars.org: [clj-ns-browser "1.1.0"].
 
@@ -11,34 +11,21 @@ For any project where you want to add the ability to browse your currently loade
 
 * in your project.clj, add:
 
-```clojure
+```
     :dev-dependencies [[clj-ns-browser "1.1.0"]]
 ```
 
 Then:
 
-```
-$ lein deps
-$ lein repl
-user=> (use 'clj-ns-browser.sdoc)
-user=> (sdoc)
-```
+    $ lein deps  
+    $ lein repl  
+    user=> (use 'clj-ns-browser.sdoc)  
+    user=> (sdoc)  
 
 Very easy!
 
-(it should actually work from any repl - tested with repls, emacs and Sublime Text 2)
+It should actually work from any repl - tested with repls, emacs and Sublime Text 2.
 
-If you would like to browse clojuredocs.org examples, see alsos, and comments from a local snapshot rather than the live web site, download this file while on-line:
-
-```clojure
-user=> (spit "cd-snap.txt" (slurp "https://raw.github.com/jafingerhut/cd-client/develop/snapshots/clojuredocs-snapshot-latest.txt"))
-```
-
- After that you can use this command to read the snapshot data and use it:
-
-```clojure
-user=> (cd-client.core/set-local-mode! "cd-snap.txt")
-```
 
 
 ## Usage
@@ -47,12 +34,12 @@ user=> (cd-client.core/set-local-mode! "cd-snap.txt")
 
 From the REPL, use macro "sdoc" like you use "doc" but with some more flexibility:
 
-    user > (sdoc map)
-    user > (sdoc 'clojure.core/map)
-    user > (sdoc "replace")
-    user > (sdoc clojure.string/replace)
+    user=> (sdoc map) 
+    user=> (sdoc 'clojure.core/map) 
+    user=> (sdoc "replace") 
+    user=> (sdoc clojure.string/replace) 
 
-will bring the browser window into view while showing the docs for the requested var.
+either will bring the browser window into view while showing the docs for the requested var.
 
 You can have multiple browser windows with:
 
@@ -94,8 +81,6 @@ When you look at the source code of those vars in your local project, then the e
 
 ## Issues
 
-* Seems to work well on MacOSX... tested the download/install/run in a fresh account. However, works "more than less" a on Lubuntu - browsing works, but for some unknown reason the "unloaded" ns don't show up there (?) - have to dive into the completion code, "stolen" from swank-clojure to see if there are any platform dependencies... (any advice/suggestion is most welcome...)
-
 * Code examples seem to refer to Clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser.  This is due to the current behavior of the cd-client library when querying the clojuredocs.org site live.  Using an offline snapshot with cd-client gives Clojure 1.3 examples (not fully understood why, and there may be exceptions).
 
 
@@ -105,7 +90,7 @@ When you look at the source code of those vars in your local project, then the e
 
 * auto-scroll selected ns and var in view of their listbox - evident from (sdoc...), which does select the ns&var, but many times items are not shown in visible list.
 
-* copy&paste, refresh as popup menus and/or keystroke shortcuts
+* popup menus (menus and keystroke-shortcuts work)
 
 * try different window layout with ns and var list-boxes above doc text-area
 
@@ -117,7 +102,6 @@ When you look at the source code of those vars in your local project, then the e
 
 * see if tools.namespace could be enhanced to get the (jar)file-name associated with a ns, which could give an indication of the version also (?)
 
-* make it a button/menu to use on/off-line clojuredocs-repo and to download/update the locally cached copy.
 
 ## Acknowledgment
 
