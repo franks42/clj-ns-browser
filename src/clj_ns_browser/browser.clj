@@ -640,6 +640,11 @@
               (future
                 (clj-ns-browser.inspector/inspect-tree
                  val (str "Inspector for value of " fqn)))))))))
+    ;; If var is selected and its value is a collection, create inspector.
+    (b/bind
+      (b/property root :visible?)
+      (b/transform (fn [o]
+        (println "root visible?:" o))))
     ;;
     )) ; end of bind-all
 
@@ -744,6 +749,10 @@
     (swap! browser-root-frm-map (fn [a] (assoc @browser-root-frm-map (config root :id) root)))
     (config! root :transfer-handler (seesaw.dnd/default-transfer-handler
       :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn "" data root))]))
+    (listen root :component-hidden 
+      (fn [e] (when (every? (fn [f] (not (config f :visible?))) @browser-root-frms) 
+        (refresh-clj-ns-browser root)
+        (alert "Sorry... cannot close/hide last browser window."))))
     (refresh-clj-ns-browser root)
     root))
 
