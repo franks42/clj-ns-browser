@@ -104,28 +104,16 @@ When you look at the source code of those vars in your local project, then the e
 
 * Enhance the grouping of Vars by object type:
 
-** Vars such as clj-ns-browser.inspector/get-child, get-child-count,
-   etc. are categorized as "Var => class clojure.lang.MultiFn" by
-   get-docs-map, which are currently simplified to just "Var".  It
-   would be nice if either get-docs-map were changed to return a
-   different object type string, e.g. "Multimethod", unless that
-   causes problems, in which case simplify-object-type could do that.
-
 ** Can defmulti or defmethod symbols have doc strings?  Examples?  If
    not, should they be enhanced to do so?
 
-** Some things are categorized as java.lang.String instead of as a
-   Var.  Why?  Examples: clojure.core/*file* and *source-path*,
-   clojure.java.javadoc/*core-java-api* and *feeling-lucky-url*
-
 ** These are categorized as Var by get-docs-map, but is there a way
    they could instead be categorized as Function?
-   clj-http.core/proxy-delete-with-body and proxy-get-with-body.
-
-** Currently atoms all get their own individual category name,
-   e.g. clj-ns-browser.browser/all-ns-loaded-atom and
-   browser-root-frms.  Might be better to put them all under a new
-   category "Atom".
+   clj-http.core/proxy-delete-with-body and proxy-get-with-body.  It
+   looks like the extension of the docsmap protocol for type
+   clojure.lang.Var in clj-info's doc2map.clj is categorizing those as
+   Vars rather than Functions because either they have no metadata, or
+   if they do, their metadata has no value for the key :arglists.
 
 ** Consider changing vars with category Protocol so that VALUE does
    not show up as a map, and "Inspect Coll" button is disabled.
