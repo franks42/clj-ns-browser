@@ -312,6 +312,8 @@
       :action (fn [event] (swap! (id :browse-btn-atom) not)))
     (listen (id :edit-btn)
       :action (fn [event] (swap! (id :edit-btn-atom) not)))
+    (listen (id :update-clojuredocs-btn)
+      :action (fn [event] (swap! (id :update-clojuredocs-btn-atom) not)))
     (listen (id :clojuredocs-offline-rb)
       :action (fn [event] (swap! (id :clojuredocs-offline-rb-atom) not)))
     (listen (id :clojuredocs-online-rb)
@@ -574,11 +576,11 @@
     (b/bind
       (id :update-clojuredocs-btn-atom)
       (b/transform (fn [& o]
-        (invoke-later
+        (future
           (let [f (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt")]
             (spit f (slurp
         "https://raw.github.com/jafingerhut/cd-client/develop/snapshots/clojuredocs-snapshot-latest.txt"))
-            (alert (str "Locally cached copy of ClojureDocs updated at:" \newline f)))))))
+            (invoke-soon (alert (str "Locally cached copy of ClojureDocs updated at:" \newline f))))))))
     ;;
     ;; inspect-btn pressed =>
     ;; If var is selected and its value is a collection, create inspector.
@@ -597,6 +599,13 @@
     )) ; end of bind-all
 
 
+(defn set-font-handler! [root f]
+  (let [id (partial select-id root)]
+    (config! (id :doc-ta) :font {:name f :size (.getSize (config (id :doc-ta) :font))})
+    (config! (id :doc-tf) :font {:name f :style :bold :size (.getSize (config (id :doc-tf) :font))})
+    (config! (id :ns-lb) :font {:name f :size (.getSize (config (id :ns-lb) :font))})
+    (config! (id :vars-lb) :font {:name f :size (.getSize (config (id :vars-lb) :font))})
+    ))
 
 ;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
 ;;(seesaw.dev/show-options) and (seesaw.dev/show-events)
@@ -604,8 +613,7 @@
   "Built menu for given browser-root-frame.
   Note that each frame has its own menu, which will be active when frame is in-focus."
   [root]
-  (let [;;root (frame :id :fake-root)
-        id (partial select-id root)]
+  (let [id (partial select-id root)]
 
     ;; built-up menu-bar
     (let [main-menu (menubar :id :main-menu)
@@ -617,7 +625,16 @@
           clojuredocs-menu (menu :text "ClojureDocs" :id :clojuredocs-menu)
           window-menu (menu :text "Window" :id :window-menu)
           help-menu (menu :text "Help"  :id :help-menu)
-
+          
+          font-menu (menu :text "Font"  :id :font-menu)
+          ;;(config! (id :doc-ta) :font "Menlo")
+          ;;(config! (id :doc-ta) :font "Monospaced")
+          ;;(config! (id :doc-ta) :font "Inconsolata")
+          font-btn-group (button-group)
+          font-Monospaced-rb (radio-menu-item :text "Monospaced" :id :font-Monospaced-rb :group font-btn-group)
+          font-Menlo-rb (radio-menu-item :text "Menlo" :id :font-Menlo-rb :group font-btn-group)
+          font-Inconsolata-rb (radio-menu-item :text "Inconsolata" :id :font-Inconsolata-rb :group font-btn-group)
+        
           update-clojuredocs (menu-item :text "ClojureDocs Update local repo" :id :update-clojuredocs-btn)
           clojuredocs-access-btn-group (button-group)
           clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
@@ -638,13 +655,18 @@
 
       (config! vars-menu :items ["Trace" "Unmap"])
 
-      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) "-------------"
+      (config! font-Monospaced-rb :listen [:action (fn [e] (set-font-handler! root "Monospaced"))] :selected? true)
+      (config! font-Menlo-rb :listen [:action (fn [e] (set-font-handler! root "Menlo"))])
+      (config! font-Inconsolata-rb :listen [:action (fn [e] (set-font-handler! root "Inconsolata"))])
+      (config! font-menu :items [font-Monospaced-rb  font-Menlo-rb font-Inconsolata-rb])
+
+      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) font-menu :separator
         (id :bring-all-windows-to-front-action) (id :cycle-through-windows-action)])
 
       (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-jira-action) (id :go-about-action)])
-      (config! docs-menu :items [update-clojuredocs "-------------"
+      (config! docs-menu :items [update-clojuredocs :separator
                                  clojuredocs-online-rb clojuredocs-offline-rb
-                                 "-------------"])
+                                 :separator])
       )))
 
 ;; init and browser-window management
