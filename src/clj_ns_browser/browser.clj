@@ -12,6 +12,8 @@
             [seesaw.bind :as b]
             [clojure.java.browse]
             [clojure.java.shell]
+            [clojure.string :as str]
+            [clj-info.doc2map :as d2m]
             [clj-ns-browser.inspector]
             [seesaw.meta]
             [clojure.java.javadoc]
@@ -175,6 +177,7 @@
 (defn ns-unloaded [] @all-ns-unloaded-atom)
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
+(def group-vars-by-object-type (atom true))
 
 
 ;; bind specific fns
@@ -199,6 +202,40 @@
                        (or (re-find r (:doc %))
                            (re-find r (str (:name %))))))
          (map #(str (:ns %) "/" (:name %))))))
+
+
+(defn better-get-docs-map [fqn]
+  (if (= fqn "clojure.core//")
+    {:object-type-str "Function"}
+    (d2m/get-docs-map fqn)))
+
+
+(defn simplify-object-type [obj-type-str]
+  (cond
+   (nil? obj-type-str) "(nil)"
+   (re-find #"^Var .*" obj-type-str) "Var"
+   :else obj-type-str))
+
+
+(defn group-by-object-type [symbol-str-seq fqns? ns-str]
+  (let [symbol-info (map (fn [s]
+                               (let [fqn (if fqns? s (str ns-str "/" s))
+                                     obj-type-str (-> fqn
+                                                      ;;d2m/get-docs-map
+                                                      better-get-docs-map
+                                                      :object-type-str
+                                                      simplify-object-type)]
+                                 {:orig-str s
+                                  :fqn-str fqn
+                                  :obj-type-str obj-type-str}))
+                             symbol-str-seq)
+        groups (group-by :obj-type-str symbol-info)]
+    (apply concat (interpose
+                   [ " " ]
+                   (map (fn [[obj-type-str l]]
+                          (concat [ (str "        " obj-type-str) ]
+                                  (sort (map :orig-str l))))
+                        (sort-by first (seq groups)))))))
 
 
 (defn widget-model-count
@@ -426,14 +463,22 @@
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (if n
-            (if (= v "search-all-docs")
-              {:already-filtered true
-               :string-seq (seq (sort (find-in-doc-strings
-                                      (config (id :vars-filter-tf) :text))))}
-              {:already-filtered false
-               :string-seq (seq (sort (map str (keys (f n)))))})
+            (let [already-filtered (= v "search-all-docs")
+                  string-seq (if already-filtered
+                               (find-in-doc-strings (config (id :vars-filter-tf)
+                                                            :text))
+                               (map str (keys (f n))))]
+              {:already-filtered already-filtered :string-seq string-seq})
             {:already-filtered false :string-seq []}))))
       (b/transform regx-tf-filter (id :vars-filter-tf))
+      (b/transform (fn [symbol-str-seq]
+        (if @group-vars-by-object-type
+          (let [n-s (selection (id :ns-lb))
+                n (and n-s (find-ns (symbol n-s)))
+                v (selection (id :vars-cbx))
+                fqns? (#{"all-publics" "search-all-docs"} v)]
+            (group-by-object-type symbol-str-seq fqns? n-s))
+          symbol-str-seq)))
       (b/notify-soon)
       (b/property (id :vars-lb) :model))
     ;;
