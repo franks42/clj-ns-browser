@@ -214,6 +214,7 @@
   (cond
    (nil? obj-type-str) "(nil)"
    (re-find #"^Var .*" obj-type-str) "Var"
+   (re-find #"^clojure\.lang\.Atom@" obj-type-str) "Atom"
    :else obj-type-str))
 
 
