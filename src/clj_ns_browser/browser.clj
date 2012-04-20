@@ -179,6 +179,7 @@
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
 (def group-vars-by-object-type-atom (atom false))
+(def vars-search-doc-also-cb-atom (atom false))
 (def ns-lb-refresh-atom (atom true))
 (def vars-lb-refresh-atom (atom true))
 
@@ -749,6 +750,7 @@
           clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
 
           vars-categorized-cb (checkbox-menu-item :text "Categorized Listing" :id :vars-categorized-cb)
+          vars-search-doc-also-cb (checkbox-menu-item :text "Search Docs Also" :id :vars-search-doc-also-cb)
           
           auto-refresh-browser-cb (checkbox-menu-item :text "Auto-Refresh" :id :auto-refresh-browser)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
@@ -769,7 +771,7 @@
 
       (config! ns-menu :items ["Load" "Trace"])
 
-      (config! vars-menu :items ["Trace" "Unmap" :separator vars-categorized-cb])
+      (config! vars-menu :items ["Trace" "Unmap" :separator vars-categorized-cb vars-search-doc-also-cb])
 
       
       (config! auto-refresh-browser-cb
@@ -780,6 +782,10 @@
         
       (config! vars-categorized-cb 
          :listen [:action (fn [e] (swap! group-vars-by-object-type-atom (fn [_] (config vars-categorized-cb :selected?))))]
+        :selected? false)
+      
+      (config! vars-search-doc-also-cb 
+         :listen [:action (fn [e] (swap! vars-search-doc-also-cb-atom (fn [_] (config vars-search-doc-also-cb :selected?))))]
         :selected? false)
       
       (config! color-coding-cb :selected? true)
