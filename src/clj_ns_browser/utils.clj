@@ -14,8 +14,18 @@
             [clojure.tools.namespace])
   (:use [seesaw.core]
         [clojure.pprint :only [pprint]]
+        [clj-info.doc2map :only [get-docs-map]]
         [clj-info.doc2txt :only [doc2txt]]
         [clj-info.doc2html :only [doc2html]]))
+
+
+;; should move to clj-info
+(defn get-object-type
+  ""
+  [fqn]
+  (if-let [m (get-docs-map fqn)]
+    (:object-type-str m)
+    ""))
 
 
 ;; following three clipboard-related functions copied from lib.sfd.clip-utils of

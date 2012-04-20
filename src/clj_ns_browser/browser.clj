@@ -159,7 +159,8 @@
 
 (def all-buttons-with-atoms
   "Used to auto-generate atoms and '-atom' keywords"
-  [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb :update-clojuredocs-btn :var-trace-btn :inspect-btn])
+  [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb 
+   :update-clojuredocs-btn :var-trace-btn :inspect-btn :color-coding-cb])
 
 (defn make-atom-kw [kw] (keyword (str (clj-ns-browser.utils/fqname kw) "-atom")))
 
@@ -356,6 +357,8 @@
       :action (fn [event] (swap! (id :clojuredocs-offline-rb-atom) not)))
     (listen (id :clojuredocs-online-rb)
       :action (fn [event] (swap! (id :clojuredocs-online-rb-atom) not)))
+    (listen (id :color-coding-cb)
+      :action (fn [event] (swap! (id :color-coding-cb-atom) not)))
     ;; vars
     (config! (id :vars-entries-lbl) :text "0")
     ; doc
@@ -526,6 +529,26 @@
       (id :doc-ta)
       (b/notify-later)
       (b/transform (fn [t] (scroll! (id :doc-ta) :to :top))))
+    ;; color doc-tf based on macro/fn/etc.
+    (b/bind
+      (apply b/funnel [(id :doc-tf) (id :color-coding-cb-atom)])
+      (b/transform (fn [o] 
+        (let [fqn (config (id :doc-tf) :text)]
+          (if (config (id :color-coding-cb) :selected?)
+            (let [type-str (get-object-type fqn)]
+              (cond 
+                (or (nil? fqn) (= "" fqn)) :white
+                (= type-str "Macro") :tomato ;;macro
+                (= type-str "Function") :lightgreen  ;; function
+                (= type-str "Multimethod") :lightgreen  ;; function
+                (= type-str "Protocol Interface/Function") :lightgreen  ;; function
+                (= type-str "Special Form") :lightsalmon  ;; function
+                (= type-str "Protocol") :lightblue  ;; function
+                (= type-str "Namespace") :blanchedalmond  ;; function
+                (= type-str "java.lang.Class") :wheat  ;; function
+                true :white))
+            :white))))
+      (b/property (id :doc-tf) :background))
     ;;
     ;; new text in doc-ta => dis/enable browser button
     (b/bind
@@ -658,6 +681,20 @@
     (config! (id :vars-lb) :font {:name f :size (.getSize (config (id :vars-lb) :font))})
     ))
 
+
+(defn auto-refresh-browser-handler
+  ""
+  [m]
+  (let [root (:root m)
+        id (partial select-id root)
+        prev-ns (:selected-ns m)
+        prev-var (:selected-ns m)
+        selected-ns (selection (id :ns-lb))
+        selected-var (selection (id :vars-lb))]
+    (selection! (id :vars-lb) (selection (id :vars-lb)))
+    {:root root :selected-ns selected-ns :selected-var selected-var})
+  )
+
 ;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
 ;;(seesaw.dev/show-options) and (seesaw.dev/show-events)
 (defn init-menu-before-bind
@@ -678,9 +715,6 @@
           help-menu (menu :text "Help"  :id :help-menu)
           
           font-menu (menu :text "Font"  :id :font-menu)
-          ;;(config! (id :doc-ta) :font "Menlo")
-          ;;(config! (id :doc-ta) :font "Monospaced")
-          ;;(config! (id :doc-ta) :font "Inconsolata")
           font-btn-group (button-group)
           font-Monospaced-rb (radio-menu-item :text "Monospaced" :id :font-Monospaced-rb :group font-btn-group)
           font-Menlo-rb (radio-menu-item :text "Menlo" :id :font-Menlo-rb :group font-btn-group)
@@ -690,6 +724,11 @@
           clojuredocs-access-btn-group (button-group)
           clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
           clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
+          
+          auto-refresh-browser-cb (checkbox-menu-item :text "Auto-Refresh" :id :auto-refresh-browser)
+          auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
+                                            :initial-delay 1000   :start? false)
+          color-coding-cb (checkbox-menu-item :text "Color Coding" :id :color-coding-cb)
 
           ]
       (config! root :menubar main-menu)
@@ -706,13 +745,20 @@
 
       (config! vars-menu :items ["Trace" "Unmap"])
 
+      
+      (config! auto-refresh-browser-cb :listen [:action 
+        (fn [e] (if (config auto-refresh-browser-cb :selected?) (.start auto-refresh-browser-timer) (.stop auto-refresh-browser-timer)))] :selected? false)
+        
+      (config! color-coding-cb :selected? true)
+
       (config! font-Monospaced-rb :listen [:action (fn [e] (set-font-handler! root "Monospaced"))] :selected? true)
       (config! font-Menlo-rb :listen [:action (fn [e] (set-font-handler! root "Menlo"))])
       (config! font-Inconsolata-rb :listen [:action (fn [e] (set-font-handler! root "Inconsolata"))])
       (config! font-menu :items [font-Monospaced-rb  font-Menlo-rb font-Inconsolata-rb])
 
-      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) font-menu :separator
-        (id :bring-all-windows-to-front-action) (id :cycle-through-windows-action)])
+      (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) font-menu color-coding-cb :separator
+        auto-refresh-browser-cb :separator (id :bring-all-windows-to-front-action) 
+        (id :cycle-through-windows-action)])
 
       (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-jira-action) (id :go-about-action)])
       (config! docs-menu :items [update-clojuredocs :separator
