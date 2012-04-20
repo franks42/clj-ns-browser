@@ -50,7 +50,7 @@
 (declare browser-with-fqn)
 (declare refresh-clj-ns-browser)
 (declare get-next-clj-ns-browser)
-
+(declare auto-refresh-browser-handler)
 
 ;; seesaw docs say to call this early
 (native!)
@@ -180,6 +180,7 @@
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
 (def group-vars-by-object-type-atom (atom false))
 (def vars-search-doc-also-cb-atom (atom false))
+(def vars-fqn-listing-cb-atom (atom false))
 (def ns-lb-refresh-atom (atom true))
 (def vars-lb-refresh-atom (atom true))
 
@@ -333,6 +334,11 @@
                 (let [url (subs (config (id :doc-ta) :text) (first s) (second s))]
                   (future (doall (clojure.java.browse/browse-url url)))))))))
 
+(add-app-action :manual-refresh-browser-action
+  (action :name "Manual Refresh"
+          :key  "menu R"
+          :handler (fn [e]
+            (auto-refresh-browser-handler {:root (to-root e)}))))
 
 
 ;; Init functions called during construction of a frame with its widget hierarchy
@@ -731,9 +737,9 @@
     (let [main-menu (menubar :id :main-menu)
           edit-menu (menu :text "Edit"  :id :edit-menu)
           file-menu (menu :text "File"  :id :file-menu)
-          ns-menu (menu :text "Namespace" :id :ns-menu)
-          vars-menu (menu :text "Var" :id :vars-menu)
-          docs-menu (menu :text "Doc" :id :docs-menu)
+          ns-menu (menu :text "Namespaces" :id :ns-menu)
+          vars-menu (menu :text "Vars" :id :vars-menu)
+          docs-menu (menu :text "Docs" :id :docs-menu)
           clojuredocs-menu (menu :text "ClojureDocs" :id :clojuredocs-menu)
           window-menu (menu :text "Window" :id :window-menu)
           help-menu (menu :text "Help"  :id :help-menu)
@@ -749,13 +755,19 @@
           clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
           clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
 
+          vars-fqn-listing-cb (checkbox-menu-item :text "FQN Listing" :id :vars-fqn-listing-cb)
           vars-categorized-cb (checkbox-menu-item :text "Categorized Listing" :id :vars-categorized-cb)
           vars-search-doc-also-cb (checkbox-menu-item :text "Search Docs Also" :id :vars-search-doc-also-cb)
           
-          auto-refresh-browser-cb (checkbox-menu-item :text "Auto-Refresh" :id :auto-refresh-browser)
+          auto-refresh-browser-cb (checkbox-menu-item :text "Auto-Refresh" :id :auto-refresh-browser-cb)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
                                             :initial-delay 1000   :start? false)
           color-coding-cb (checkbox-menu-item :text "Color Coding" :id :color-coding-cb)
+          
+          ;; popup's
+          doc-ta-popup (popup :id :doc-ta-popup)
+          ns-lb-popup (popup :id :ns-lb-popup)
+          vars-lb-popup (popup :id :vars-lb-popup)
 
           ]
       
@@ -771,7 +783,7 @@
 
       (config! ns-menu :items ["Load" "Trace"])
 
-      (config! vars-menu :items ["Trace" "Unmap" :separator vars-categorized-cb vars-search-doc-also-cb])
+      (config! vars-menu :items ["Trace" "Un-Map" "Un-Alias" :separator vars-categorized-cb vars-fqn-listing-cb vars-search-doc-also-cb])
 
       
       (config! auto-refresh-browser-cb
@@ -782,6 +794,10 @@
         
       (config! vars-categorized-cb 
          :listen [:action (fn [e] (swap! group-vars-by-object-type-atom (fn [_] (config vars-categorized-cb :selected?))))]
+        :selected? false)
+      
+      (config! vars-fqn-listing-cb 
+         :listen [:action (fn [e] (swap! vars-fqn-listing-cb-atom (fn [_] (config vars-fqn-listing-cb :selected?))))]
         :selected? false)
       
       (config! vars-search-doc-also-cb 
@@ -796,13 +812,40 @@
       (config! font-menu :items [font-Monospaced-rb  font-Menlo-rb font-Inconsolata-rb])
 
       (config! window-menu :items [(id :zoom-in-action) (id :zoom-out-action) font-menu color-coding-cb :separator
-        auto-refresh-browser-cb :separator (id :bring-all-windows-to-front-action) 
+        (id :manual-refresh-browser-action) auto-refresh-browser-cb :separator (id :bring-all-windows-to-front-action) 
         (id :cycle-through-windows-action)])
 
       (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-jira-action) (id :go-about-action)])
       (config! docs-menu :items [update-clojuredocs :separator
                                  clojuredocs-online-rb clojuredocs-offline-rb
                                  :separator])
+      
+      ;; popup's
+      (config! (id :doc-ta) :popup doc-ta-popup)
+      (config! doc-ta-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
+                                    (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
+                                    (id :open-url-from-selection-action) :separator
+                                    ;;auto-refresh-browser-cb :separator
+                                    (id :zoom-in-action) (id :zoom-out-action)])
+                                    
+      (config! (id :ns-lb) :popup ns-lb-popup)
+      (config! ns-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
+                                    (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
+                                    (id :open-url-from-selection-action) :separator
+                                    "Load" "Trace" 
+                                    ;;:separator auto-refresh-browser-cb
+                                    ])
+                                    
+      (config! (id :vars-lb) :popup vars-lb-popup)
+      (config! vars-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
+                                    (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
+                                    (id :open-url-from-selection-action) :separator
+                                    "Trace" "Un-Map" "Un-Alias" 
+                                    ;;:separator vars-categorized-cb
+                                    ;;vars-fqn-listing-cb vars-search-doc-also-cb
+                                    ;;:separator auto-refresh-browser-cb
+                                    ])
+
       )))
 
 ;; init and browser-window management
