@@ -178,7 +178,7 @@
 (defn ns-unloaded [] @all-ns-unloaded-atom)
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
-(def group-vars-by-object-type (atom true))
+(def group-vars-by-object-type-atom (atom false))
 (def ns-lb-refresh-atom (atom true))
 (def vars-lb-refresh-atom (atom true))
 
@@ -470,7 +470,8 @@
         [(b/selection (id :vars-cbx))
          (b/selection (id :ns-lb))
          (id :vars-filter-tf)
-         vars-lb-refresh-atom])
+         vars-lb-refresh-atom
+         group-vars-by-object-type-atom])
       (b/transform (fn [o]
         (let [n-s (selection (id :ns-lb))
               n (and n-s (find-ns (symbol n-s)))
@@ -486,13 +487,13 @@
             {:already-filtered false :string-seq []}))))
       (b/transform regx-tf-filter (id :vars-filter-tf))
       (b/transform (fn [symbol-str-seq]
-        (if @group-vars-by-object-type
+        (if @group-vars-by-object-type-atom
           (let [n-s (selection (id :ns-lb))
                 n (and n-s (find-ns (symbol n-s)))
                 v (selection (id :vars-cbx))
                 fqns? (#{"all-publics" "search-all-docs"} v)]
             (group-by-object-type symbol-str-seq fqns? n-s))
-          symbol-str-seq)))
+          (sort symbol-str-seq))))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
         (if (= l (seesaw.meta/get-meta root :last-vars-lb))
           false
@@ -738,6 +739,8 @@
           clojuredocs-access-btn-group (button-group)
           clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
           clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
+
+          vars-categorized-cb (checkbox-menu-item :text "Categorized Listing" :id :vars-categorized-cb)
           
           auto-refresh-browser-cb (checkbox-menu-item :text "Auto-Refresh" :id :auto-refresh-browser)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
@@ -757,12 +760,19 @@
 
       (config! ns-menu :items ["Load" "Trace"])
 
-      (config! vars-menu :items ["Trace" "Unmap"])
+      (config! vars-menu :items ["Trace" "Unmap" :separator vars-categorized-cb])
 
       
-      (config! auto-refresh-browser-cb :listen [:action 
-        (fn [e] (if (config auto-refresh-browser-cb :selected?) (.start auto-refresh-browser-timer) (.stop auto-refresh-browser-timer)))] :selected? false)
+      (config! auto-refresh-browser-cb
+        :listen [:action (fn [e] (if (config auto-refresh-browser-cb :selected?) 
+                                   (.start auto-refresh-browser-timer) 
+                                   (.stop auto-refresh-browser-timer)))]
+        :selected? false)
         
+      (config! vars-categorized-cb 
+         :listen [:action (fn [e] (swap! group-vars-by-object-type-atom (fn [_] (config vars-categorized-cb :selected?))))]
+        :selected? false)
+      
       (config! color-coding-cb :selected? true)
 
       (config! font-Monospaced-rb :listen [:action (fn [e] (set-font-handler! root "Monospaced"))] :selected? true)
