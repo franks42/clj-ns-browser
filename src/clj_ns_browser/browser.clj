@@ -522,7 +522,8 @@
         (fn [[doc-tf doc-cbx]]
           (future
             (let [s (render-doc-text doc-tf doc-cbx)]
-              (invoke-soon (config! (id :doc-ta) :text s)))))))
+              (when-not (= s (config (id :doc-ta) :text))
+                (invoke-soon (config! (id :doc-ta) :text s))))))))
     ;;
     ;; new text in doc-ta => scroll to top
     (b/bind
