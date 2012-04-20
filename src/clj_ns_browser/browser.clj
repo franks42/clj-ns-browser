@@ -323,6 +323,14 @@
               (if-let [s (selection (id :doc-ta))]
                 (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
                   (invoke-soon (browser-with-fqn "" fqn (to-root e)))))))))
+(add-app-action :open-url-from-selection-action
+  (action :name "Open URL from selection"
+          :key  "menu I"
+          :handler (fn [e]
+            (let [id (partial select-id (to-root e))]
+              (when-let [s (selection (id :doc-ta))]
+                (let [url (subs (config (id :doc-ta) :text) (first s) (second s))]
+                  (future (doall (clojure.java.browse/browse-url url)))))))))
 
 
 
@@ -748,6 +756,7 @@
           color-coding-cb (checkbox-menu-item :text "Color Coding" :id :color-coding-cb)
 
           ]
+      
       (config! root :menubar main-menu)
 
       (config! main-menu
@@ -756,7 +765,7 @@
       (config! file-menu :items [(id :new-browser-action)])
 
       (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
-                                 (id :fqn-from-selection-action)])
+                                 (id :fqn-from-selection-action) (id :open-url-from-selection-action)])
 
       (config! ns-menu :items ["Load" "Trace"])
 
