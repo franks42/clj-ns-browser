@@ -179,7 +179,8 @@
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
 (def group-vars-by-object-type (atom true))
-
+(def ns-lb-refresh-atom (atom true))
+(def vars-lb-refresh-atom (atom true))
 
 ;; bind specific fns
 
@@ -446,11 +447,19 @@
     (b/bind
       (apply b/funnel
         [(id :ns-cbx)
-         (id :ns-filter-tf)])
+         (id :ns-filter-tf)
+         ns-lb-refresh-atom])
       (b/transform (fn [o]
         (let [v (selection (id :ns-cbx))]
+          (when (= v "unloaded") (config! (id :doc-tf) :text "")(config! (id :doc-ta) :text ""))
           {:already-filtered false :string-seq ((get ns-cbx-value-fn-map v))})))
       (b/transform regx-tf-filter (id :ns-filter-tf))
+      (b/filter (fn [l]  ;; only refresh if the list really has changed
+        (if (= l (seesaw.meta/get-meta root :last-ns-lb))
+          false
+          (do 
+            (seesaw.meta/put-meta! root :last-ns-lb l)
+            true))))
       (b/notify-soon)
       (b/property (id :ns-lb) :model))
     ;;
@@ -460,7 +469,8 @@
       (apply b/funnel
         [(b/selection (id :vars-cbx))
          (b/selection (id :ns-lb))
-         (id :vars-filter-tf)])
+         (id :vars-filter-tf)
+         vars-lb-refresh-atom])
       (b/transform (fn [o]
         (let [n-s (selection (id :ns-lb))
               n (and n-s (find-ns (symbol n-s)))
@@ -483,6 +493,12 @@
                 fqns? (#{"all-publics" "search-all-docs"} v)]
             (group-by-object-type symbol-str-seq fqns? n-s))
           symbol-str-seq)))
+      (b/filter (fn [l]  ;; only refresh if the list really has changed
+        (if (= l (seesaw.meta/get-meta root :last-vars-lb))
+          false
+          (do 
+            (seesaw.meta/put-meta! root :last-vars-lb l)
+            true))))
       (b/notify-soon)
       (b/property (id :vars-lb) :model))
     ;;
@@ -687,9 +703,11 @@
         prev-var (:selected-ns m)
         selected-ns (selection (id :ns-lb))
         selected-var (selection (id :vars-lb))]
-    (selection! (id :vars-lb) (selection (id :vars-lb)))
-    {:root root :selected-ns selected-ns :selected-var selected-var})
-  )
+    (swap! ns-lb-refresh-atom not)
+    (swap! vars-lb-refresh-atom not)
+    (when-not (= (selection (id :ns-lb)) selected-ns) (selection! (id :ns-lb) selected-ns))
+    (selection! (id :vars-lb) selected-var)
+    {:root root :selected-ns selected-ns :selected-var selected-var}))
 
 ;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
 ;;(seesaw.dev/show-options) and (seesaw.dev/show-events)
