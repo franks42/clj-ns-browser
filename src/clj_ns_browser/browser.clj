@@ -664,11 +664,6 @@
               (future
                 (clj-ns-browser.inspector/inspect-tree
                  val (str "Inspector for value of " fqn)))))))))
-    ;; If var is selected and its value is a collection, create inspector.
-    (b/bind
-      (b/property root :visible?)
-      (b/transform (fn [o]
-        (println "root visible?:" o))))
     ;;
     )) ; end of bind-all
 
