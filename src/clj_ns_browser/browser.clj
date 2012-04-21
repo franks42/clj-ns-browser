@@ -195,6 +195,14 @@
     (when-let [r (try (re-pattern (config t-f :text)) (catch Exception e nil))]
       (filter #(re-find r %) string-seq))))
 
+(defn ensure-selection-visible
+  "Scroll the selection of a listbox within view.
+  Input lbx is a swing listbox reference.
+  or input: root and keyword-id lbx-kw for the listbox."
+  ([lbx] (.ensureIndexIsVisible lbx (.getSelectedIndex lbx)))
+  ([root lbx-kw]
+    (let [id (partial select-id root)]
+      (.ensureIndexIsVisible (id lbx-kw) (.getSelectedIndex (id lbx-kw))))))
 
 (defn find-in-doc-strings
   [pat-in-str]
@@ -340,6 +348,16 @@
           :handler (fn [e]
             (auto-refresh-browser-handler {:root (to-root e)}))))
 
+(add-app-action :auto-refresh-browser-action
+  (action :name "Auto-Refresh"
+          :handler (fn [e] (let [root (to-root e)
+                                 id (partial select-id root)]
+                              (println "e:" e)
+                              (println "getSource:" (.getSource e))
+                             (if (config (id :auto-refresh-browser-cb) :selected?) 
+                               (.start (seesaw.meta/get-meta root :auto-refresh-browser-timer))
+                               (.stop (seesaw.meta/get-meta root :auto-refresh-browser-timer)))))))
+
 
 ;; Init functions called during construction of a frame with its widget hierarchy
 
@@ -409,12 +427,13 @@
       (b/transform widget-model-count (id :vars-lb))
       (id :vars-entries-lbl))
     ;; new ns selected in ns-lb =>
-    ;; dis/enable require-btn, update fqn in doc-tf
+    ;; dis/enable require-btn, update fqn in doc-tf, scroll within view
     (b/bind
       (b/selection (id :ns-lb))
         (b/tee
           (b/bind
             (b/transform (fn [ns]
+              (ensure-selection-visible (id :ns-lb))
               (if (and ns (some #(= ns %) @all-ns-unloaded-atom))
                 true
                 false)))
@@ -447,6 +466,7 @@
     (b/bind
       (b/selection (id :vars-lb))
       (b/transform (fn [v]
+        (ensure-selection-visible (id :vars-lb))
         (if v
           (let [fqn (fqname (selection (id :ns-lb)) v)]
             (if (and fqn (not= fqn ""))
@@ -723,6 +743,8 @@
     (swap! vars-lb-refresh-atom not)
     (when-not (= (selection (id :ns-lb)) selected-ns) (selection! (id :ns-lb) selected-ns))
     (selection! (id :vars-lb) selected-var)
+    (ensure-selection-visible (id :ns-lb))
+    (ensure-selection-visible (id :vars-lb))
     {:root root :selected-ns selected-ns :selected-var selected-var}))
 
 ;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
@@ -759,7 +781,7 @@
           vars-categorized-cb (checkbox-menu-item :text "Categorized Listing" :id :vars-categorized-cb)
           vars-search-doc-also-cb (checkbox-menu-item :text "Search Docs Also" :id :vars-search-doc-also-cb)
           
-          auto-refresh-browser-cb (checkbox-menu-item :text "Auto-Refresh" :id :auto-refresh-browser-cb)
+          auto-refresh-browser-cb (checkbox-menu-item :action (id :auto-refresh-browser-action) :id :auto-refresh-browser-cb)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
                                             :initial-delay 1000   :start? false)
           color-coding-cb (checkbox-menu-item :text "Color Coding" :id :color-coding-cb)
@@ -770,6 +792,8 @@
           vars-lb-popup (popup :id :vars-lb-popup)
 
           ]
+          
+      (seesaw.meta/put-meta! root :auto-refresh-browser-timer auto-refresh-browser-timer)
       
       (config! root :menubar main-menu)
 
