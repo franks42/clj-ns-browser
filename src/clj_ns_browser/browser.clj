@@ -402,7 +402,7 @@
     (config! (id :doc-ta) :text "                                                                        ")
     (selection! (id :ns-cbx) "loaded")
     (selection! (id :vars-cbx) "publics")
-    (selection! (id :vars-cbx) "Doc")))
+    (selection! (id :doc-cbx) "Doc")))
 
 
 (defn init-after-bind
