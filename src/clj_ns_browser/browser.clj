@@ -355,8 +355,6 @@
   (action :name "Auto-Refresh"
           :handler (fn [e] (let [root (to-root e)
                                  id (partial select-id root)]
-                              (println "e:" e)
-                              (println "getSource:" (.getSource e))
                              (if (config (id :auto-refresh-browser-cb) :selected?) 
                                (.start (seesaw.meta/get-meta root :auto-refresh-browser-timer))
                                (.stop (seesaw.meta/get-meta root :auto-refresh-browser-timer)))))))
@@ -371,6 +369,7 @@
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     ;; ns
     (config! (id :ns-lb) :model @all-ns-loaded-atom)
+    (config! (id :ns-lb) :selection-mode :multi-interval) ;; experimental...
     (config! (id :vars-lb) :model [])
     (config! (id :ns-entries-lbl) :text "0")
     (config! (id :ns-require-btn) :enabled? false)
@@ -436,7 +435,6 @@
         (b/tee
           (b/bind
             (b/transform (fn [ns]
-              (ensure-selection-visible (id :ns-lb))
               (if (and ns (some #(= ns %) @all-ns-unloaded-atom))
                 true
                 false)))
@@ -469,7 +467,6 @@
     (b/bind
       (b/selection (id :vars-lb))
       (b/transform (fn [v]
-        (ensure-selection-visible (id :vars-lb))
         (if v
           (let [fqn (fqname (selection (id :ns-lb)) v)]
             (if (and fqn (not= fqn ""))
@@ -744,8 +741,14 @@
         selected-var (selection (id :vars-lb))]
     (swap! ns-lb-refresh-atom not)
     (swap! vars-lb-refresh-atom not)
-    (when-not (= (selection (id :ns-lb)) selected-ns) (selection! (id :ns-lb) selected-ns))
-    (selection! (id :vars-lb) selected-var)
+    (when-not (= (selection (id :ns-lb)) selected-ns) 
+      (selection! (id :ns-lb) selected-ns)
+      (ensure-selection-visible (id :ns-lb))
+      (selection! (id :vars-lb) selected-var)
+      (ensure-selection-visible (id :vars-lb)))
+    (when-not (= (selection (id :vars-lb)) selected-var) 
+      (selection! (id :vars-lb) selected-var)
+      (ensure-selection-visible (id :vars-lb)))
     {:root root :selected-ns selected-ns :selected-var selected-var}))
 
 ;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
@@ -881,8 +884,10 @@
   "Refresh all or the given browser-window (pack! and show!)"
 ;;   ([] (map #(invoke-later (show! (pack! %))) @browser-root-frms))
 ;;   ([root] (invoke-later (show! (pack! root)))))
-  ([] (doall (map #(invoke-soon (show! %)) @clj-ns-browser.browser/browser-root-frms)))
-  ([root] (invoke-soon (show! root))))
+  ([] 
+    (doall (map #(invoke-soon (show! %)) @clj-ns-browser.browser/browser-root-frms)))
+  ([root] 
+    (invoke-soon (show! root))))
 
 
 (defn new-clj-ns-browser
@@ -940,12 +945,16 @@
               (selection! (id :ns-cbx) "loaded")
               (selection! (id :ns-lb) ns1)
               (selection! (id :vars-cbx) "publics")
-              (selection! (id :vars-lb) name1))
+              (selection! (id :vars-lb) name1)
+              (ensure-selection-visible (id :ns-lb))
+              (ensure-selection-visible (id :vars-lb)))
             (if (find-ns (symbol name1))
               ;; should be namespace
               (invoke-soon
                 (selection! (id :ns-lb) name1)
-                (selection! (id :doc-cbx) "Doc"))
+                (selection! (id :doc-cbx) "Doc")
+                (ensure-selection-visible (id :ns-lb))
+                (ensure-selection-visible (id :vars-lb)))
               ;; else must be special-form or class
               (invoke-soon
                 (if (special-form? fqn)
@@ -956,7 +965,9 @@
                     (selection! (id :vars-lb) name1))
                   (do
                     (selection! (id :ns-lb) (str *ns*))
-                    (selection! (id :doc-cbx) "Doc"))))))
-            (refresh-clj-ns-browser root)
+                    (selection! (id :doc-cbx) "Doc")))
+                (ensure-selection-visible (id :ns-lb))
+                (ensure-selection-visible (id :vars-lb)))))
+          (refresh-clj-ns-browser root)
           fqn)))))
 
