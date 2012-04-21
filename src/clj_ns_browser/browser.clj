@@ -346,7 +346,10 @@
   (action :name "Manual Refresh"
           :key  "menu R"
           :handler (fn [e]
-            (auto-refresh-browser-handler {:root (to-root e)}))))
+            (let [id (partial select-id (to-root e))]
+              (auto-refresh-browser-handler {:root (to-root e)})
+              (ensure-selection-visible (id :ns-lb))
+              (ensure-selection-visible (id :vars-lb))))))
 
 (add-app-action :auto-refresh-browser-action
   (action :name "Auto-Refresh"
@@ -743,8 +746,6 @@
     (swap! vars-lb-refresh-atom not)
     (when-not (= (selection (id :ns-lb)) selected-ns) (selection! (id :ns-lb) selected-ns))
     (selection! (id :vars-lb) selected-var)
-    (ensure-selection-visible (id :ns-lb))
-    (ensure-selection-visible (id :vars-lb))
     {:root root :selected-ns selected-ns :selected-var selected-var}))
 
 ;;seesaw.core/toggle-full-screen! (locks up computer!!! don't use)
