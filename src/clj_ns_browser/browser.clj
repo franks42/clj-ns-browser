@@ -142,13 +142,14 @@
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
 (def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
-                          "refers" "special-forms" "all-publics"
+                          "privates" "refers" "special-forms" "all-publics"
                           "search-all-docs"])
 (def vars-cbx-value-fn-map {"aliases"   ns-aliases
                             "imports"   ns-imports
                             "interns"   ns-interns
                             "map"       ns-map
                             "publics"   ns-publics
+                            "privates"  ns-privates
                             "refers"    ns-refers
                             "special-forms" ns-special-forms
                             "all-publics" all-publics

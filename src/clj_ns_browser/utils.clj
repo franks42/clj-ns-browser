@@ -100,6 +100,25 @@
                   (all-ns))
           (repeat nil)))
 
+(defn filter-key [keyfn pred amap]
+  (loop [ret {} es (seq amap)]
+    (if es
+      (if (pred (keyfn (first es)))
+        (recur (assoc ret (key (first es)) (val (first es))) (next es))
+        (recur ret (next es)))
+      ret)))
+
+(defn ns-privates
+  "Returns a map of the private (i.e. not public) intern mappings for
+  the namespace."
+  [ns]
+  (let [ns (the-ns ns)]
+    (filter-key val (fn [^clojure.lang.Var v]
+                      (and (instance? clojure.lang.Var v)
+                           (= ns (.ns v))
+                           (not (.isPublic v))))
+                (ns-map ns))))
+
 (defn all-ns-classpath
   "Returns a sorted set of the name-strings of all namespaces found on class-path."
   []
