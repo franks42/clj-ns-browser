@@ -10,6 +10,6 @@
                  [org.thnetos/cd-client "0.3.4"]]
  	:dev-dependencies [[lein-marginalia "0.6.0"]
  	                   [codox "0.5.0"]]
-  :jvm-opts ["-Xdock:name=Clj-NS-Browser"]
+  :jvm-opts ~(if (= (System/getProperty "os.name") "Mac OS X") ["-Xdock:name=Clj-NS-Browser"] [])
   :java-source-path "src"
   :main clj-ns-browser.core)
