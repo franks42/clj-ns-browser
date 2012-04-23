@@ -20,19 +20,28 @@
         [clj-info.doc2html :only [doc2html]]))
 
 
+;; Two convenience function for clojure.tools.trace
+;; that should ideally be part of that library
 
-(defn traced?
+(defn var-traceable? 
+  "Predicate that returns whether a var is traceable or not."
+  [v]
+  (and (var? v) (ifn? @v) (-> v meta :macro not)))
+
+
+(defn var-traced?
   "Predicate that returns whether a var is currently being traced.
   (should ideally be part of clojure.tools.trace such that we can
   remain oblivious about the trace-implementation internals)"  
   ([ns s]
-     (traced? (ns-resolve ns s)))
+     (var-traced? (ns-resolve ns s)))
   ([v]
      (let [v (if (var? v) v (resolve v))]
        (not (nil? ((meta v) ::clojure.tools.trace/traced))))))
 
 
 ;; should move to clj-info
+
 (defn get-object-type
   ""
   [fqn]

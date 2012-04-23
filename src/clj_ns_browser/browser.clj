@@ -439,8 +439,8 @@
         (fn [v]
           (if-let [fqn (config (id :doc-tf) :text)]
             (let [vr (resolve-fqname fqn)]
-              (if (and (var? vr) (ifn? @vr) (-> vr meta :macro not))
-                (do (if (traced? vr)
+              (if (var-traceable? vr)
+                (do (if (var-traced? vr)
                       (config! (id :var-trace-btn) :text "untrace")
                       (config! (id :var-trace-btn) :text "trace"))
                     true)
@@ -489,8 +489,8 @@
         (fn [_]
           (when-let [fqn (config (id :doc-tf) :text)]
             (let [vr (resolve-fqname fqn)]
-              (when (and (var? vr) (ifn? @vr) (-> vr meta :macro not))
-                (if (traced? vr)
+              (when (var-traceable? vr)
+                (if (var-traced? vr)
                   (do (clojure.tools.trace/untrace-var* vr)
                       (config! (id :var-trace-btn) :text "trace"))
                   (do (clojure.tools.trace/trace-var* vr)
@@ -969,7 +969,9 @@
   ([a-ns a-name browser-frame]
     (let [root browser-frame
           id (partial select-id root)]
-      (if-let [fqn (and a-name (or (string? a-name)(symbol? a-name)) (fqname a-name))]
+      (if-let [fqn (and a-name 
+                        (or (string? a-name)(symbol? a-name))
+                        (fqname a-name))]
         (let [sym1 (symbol fqn)
               name1 (name sym1)
               ns1 (try (namespace sym1)(catch Exception e))]
@@ -1003,5 +1005,6 @@
                 (ensure-selection-visible (id :ns-lb))
                 (ensure-selection-visible (id :vars-lb)))))
           (refresh-clj-ns-browser root)
-          fqn)))))
+          fqn)
+        ))))
 
