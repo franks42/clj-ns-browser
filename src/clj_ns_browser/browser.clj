@@ -360,6 +360,27 @@
                                (.start (seesaw.meta/get-meta root :auto-refresh-browser-timer))
                                (.stop (seesaw.meta/get-meta root :auto-refresh-browser-timer)))))))
 
+(add-app-action :ns-trace-btn-action
+  (action :name "Trace NS"
+          :enabled? true
+          :handler (fn [e] (let [root (to-root e)]
+                             (letfn [(id [kw] (select-id root kw))]
+                               (when-let [ns-str (selection (id :ns-lb))]
+                                 (if-let [ns-ns (find-ns (symbol ns-str))]
+                                   (do (clojure.tools.trace/trace-ns* ns-ns)
+                                       (alert (str "Tracing all traceable vars in namespace: " ns-str)))
+                                   (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
+
+(add-app-action :ns-untrace-btn-action
+  (action :name "Untrace NS"
+          :enabled? true
+          :handler (fn [e] (let [root (to-root e)]
+                             (letfn [(id [kw] (select-id root kw))]
+                               (when-let [ns-str (selection (id :ns-lb))]
+                                 (if-let [ns-ns (find-ns (symbol ns-str))]
+                                   (do (clojure.tools.trace/untrace-ns* ns-ns)
+                                       (alert (str "Untraced all traced-vars in namespace: " ns-str)))
+                                   (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
 
 ;; Init functions called during construction of a frame with its widget hierarchy
 
@@ -459,13 +480,24 @@
                 true
                 false)))
             (b/property (id :ns-require-btn) :enabled?))
-        (b/bind
-          (b/transform (fn [ns]
-            (if (and ns (find-ns (symbol ns)))
-              (fqname ns)
-              "")))
-          (b/tee
-            (b/property (id :doc-tf) :text)))))
+          (b/bind
+            (b/transform (fn [ns-str]
+              (if (and ns-str (find-ns (symbol ns-str)))
+                true
+                false)))
+            (b/property (id :ns-trace-btn-action) :enabled?))
+          (b/bind
+            (b/transform (fn [ns-str]
+              (if (and ns-str (find-ns (symbol ns-str)))
+                true
+                false)))
+            (b/property (id :ns-untrace-btn-action) :enabled?))
+          (b/bind
+            (b/transform (fn [ns]
+              (if (and ns (find-ns (symbol ns)))
+                (fqname ns)
+                "")))
+            (b/property (id :doc-tf) :text))))
     ;; require-btn pressed =>
     ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
     (b/bind
@@ -843,7 +875,7 @@
       (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
                                  (id :fqn-from-selection-action) (id :open-url-from-selection-action)])
 
-      (config! ns-menu :items ["Load" "Trace"])
+      (config! ns-menu :items ["Load" :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
       (config! vars-menu :items ["Trace" "Un-Map" "Un-Alias" :separator vars-categorized-cb vars-fqn-listing-cb vars-search-doc-also-cb])
 
@@ -894,7 +926,8 @@
       (config! ns-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
                                     (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
                                     (id :open-url-from-selection-action) :separator
-                                    "Load" "Trace" 
+                                    "Load" :separator 
+                                    (id :ns-trace-btn-action) (id :ns-untrace-btn-action) 
                                     ;;:separator auto-refresh-browser-cb
                                     ])
                                     
