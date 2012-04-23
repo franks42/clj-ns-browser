@@ -503,7 +503,11 @@
       (b/selection (id :vars-lb))
       (b/transform (fn [v]
         (if v
-          (let [fqn (fqname (selection (id :ns-lb)) v)]
+          (let [fqn (if (= "aliases" (selection (id :vars-cbx)))
+                      (str (get (ns-aliases (the-ns (symbol
+                                                     (selection (id :ns-lb)))))
+                                (symbol v)))
+                      (fqname (selection (id :ns-lb)) v))]
             (if (and fqn (not= fqn ""))
               fqn
               (when (= (selection (id :vars-cbx)) "aliases")
