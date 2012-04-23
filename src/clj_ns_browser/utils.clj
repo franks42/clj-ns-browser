@@ -11,12 +11,25 @@
             [cd-client.core]
             [clojure.java.shell]
             [clojure.string :as str]
-            [clojure.tools.namespace])
+            [clojure.tools.namespace]
+            [clojure.tools.trace])
   (:use [seesaw.core]
         [clojure.pprint :only [pprint]]
         [clj-info.doc2map :only [get-docs-map]]
         [clj-info.doc2txt :only [doc2txt]]
         [clj-info.doc2html :only [doc2html]]))
+
+
+
+(defn traced?
+  "Predicate that returns whether a var is currently being traced.
+  (should ideally be part of clojure.tools.trace such that we can
+  remain oblivious about the trace-implementation internals)"  
+  ([ns s]
+     (traced? (ns-resolve ns s)))
+  ([v]
+     (let [v (if (var? v) v (resolve v))]
+       (not (nil? ((meta v) ::clojure.tools.trace/traced))))))
 
 
 ;; should move to clj-info

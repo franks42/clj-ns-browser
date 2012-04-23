@@ -17,7 +17,8 @@
             [clj-ns-browser.inspector]
             [seesaw.meta]
             [clojure.java.javadoc]
-            [cd-client.core])
+            [cd-client.core]
+            [clojure.tools.trace])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
         [seesaw.border]
@@ -383,6 +384,8 @@
       :action (fn [event] (swap! (id :inspect-btn-atom) not)))
     (listen (id :ns-require-btn)
       :action (fn [event] (swap! (id :ns-require-btn-atom) not)))
+    (listen (id :var-trace-btn)
+      :action (fn [event] (swap! (id :var-trace-btn-atom) not)))
     (listen (id :browse-btn)
       :action (fn [event] (swap! (id :browse-btn-atom) not)))
     (listen (id :edit-btn)
@@ -429,6 +432,23 @@
       (b/transform widget-model-count (id :vars-lb))
       (id :vars-entries-lbl))
     ;; new ns selected in ns-lb =>
+    ;; dis/enable var-trace-btn
+    (b/bind
+      (b/selection (id :doc-tf))
+      (b/transform
+        (fn [v]
+          (if-let [fqn (config (id :doc-tf) :text)]
+            (let [vr (resolve-fqname fqn)]
+              (if (and (var? vr) (ifn? @vr) (-> vr meta :macro not))
+                (do (if (traced? vr)
+                      (config! (id :var-trace-btn) :text "untrace")
+                      (config! (id :var-trace-btn) :text "trace"))
+                    true)
+                (do (config! (id :var-trace-btn) :text "trace")
+                    false)))
+            (do (config! (id :var-trace-btn) :text "trace")
+                false))))
+      (b/property (id :var-trace-btn) :enabled?))
     ;; dis/enable require-btn, update fqn in doc-tf, scroll within view
     (b/bind
       (b/selection (id :ns-lb))
@@ -462,6 +482,20 @@
                 (selection! (id :ns-lb) n)
                 (scroll! (id :ns-lb) :to [:row i]))
               (alert (str "Hmmm... seems that namespace \"" n "\" cannot be required (?)"))))))))
+    ;; (un)trace-btn pressed =>
+    (b/bind
+      (id :var-trace-btn-atom)
+      (b/transform
+        (fn [_]
+          (when-let [fqn (config (id :doc-tf) :text)]
+            (let [vr (resolve-fqname fqn)]
+              (when (and (var? vr) (ifn? @vr) (-> vr meta :macro not))
+                (if (traced? vr)
+                  (do (clojure.tools.trace/untrace-var* vr)
+                      (config! (id :var-trace-btn) :text "trace"))
+                  (do (clojure.tools.trace/trace-var* vr)
+                      (config! (id :var-trace-btn) :text "untrace")))
+                (selection! (id :vars-lb) (selection (id :vars-lb)))))))))
     ;;
     ;; select item in vars-lb => set associated fqn in doc-tf
     (b/bind
