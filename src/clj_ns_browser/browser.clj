@@ -361,9 +361,16 @@
                                (.start (seesaw.meta/get-meta root :auto-refresh-browser-timer))
                                (.stop (seesaw.meta/get-meta root :auto-refresh-browser-timer)))))))
 
+(add-app-action :var-trace-btn-action
+  (action :name "Trace Var"
+          :enabled? false
+          :handler (fn [e] (let [root (to-root e)]
+                             (letfn [(id [kw] (select-id root kw))] 
+                               (swap! (id :var-trace-btn-atom) not))))))
+
 (add-app-action :ns-trace-btn-action
   (action :name "Trace NS"
-          :enabled? true
+          :enabled? false
           :handler (fn [e] (let [root (to-root e)]
                              (letfn [(id [kw] (select-id root kw))]
                                (when-let [ns-str (selection (id :ns-lb))]
@@ -374,7 +381,7 @@
 
 (add-app-action :ns-untrace-btn-action
   (action :name "Untrace NS"
-          :enabled? true
+          :enabled? false
           :handler (fn [e] (let [root (to-root e)]
                              (letfn [(id [kw] (select-id root kw))]
                                (when-let [ns-str (selection (id :ns-lb))]
@@ -396,18 +403,18 @@
     (config! (id :vars-lb) :model [])
     (config! (id :ns-entries-lbl) :text "0")
     (config! (id :ns-require-btn) :enabled? false)
+    (config! (id :ns-require-btn) :text "Require")
     (config! (id :doc-cbx) :model doc-cbx-value-list)
     (config! (id :edit-btn) :enabled? false)
     (config! (id :browse-btn) :enabled? false)
-    (config! (id :var-trace-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
     (config! (id :inspect-btn) :enabled? false)
     (listen (id :inspect-btn)
       :action (fn [event] (swap! (id :inspect-btn-atom) not)))
     (listen (id :ns-require-btn)
       :action (fn [event] (swap! (id :ns-require-btn-atom) not)))
-    (listen (id :var-trace-btn)
-      :action (fn [event] (swap! (id :var-trace-btn-atom) not)))
+    (config! (id :var-trace-btn)
+      :action (id :var-trace-btn-action))
     (listen (id :browse-btn)
       :action (fn [event] (swap! (id :browse-btn-atom) not)))
     (listen (id :edit-btn)
@@ -454,7 +461,6 @@
       (b/transform widget-model-count (id :vars-lb))
       (id :vars-entries-lbl))
     ;; new ns selected in ns-lb =>
-    ;; dis/enable var-trace-btn
     (b/bind
       (b/selection (id :doc-tf))
       (b/transform
@@ -463,14 +469,14 @@
             (let [vr (resolve-fqname fqn)]
               (if (var-traceable? vr)
                 (do (if (var-traced? vr)
-                      (config! (id :var-trace-btn) :text "untrace")
-                      (config! (id :var-trace-btn) :text "trace"))
+                      (config! (id :var-trace-btn-action) :name "Untrace Var")
+                      (config! (id :var-trace-btn-action) :name "Trace Var"))
                     true)
-                (do (config! (id :var-trace-btn) :text "trace")
+                (do (config! (id :var-trace-btn-action) :name "Trace Var")
                     false)))
-            (do (config! (id :var-trace-btn) :text "trace")
+            (do (config! (id :var-trace-btn-action) :name "Trace Var")
                 false))))
-      (b/property (id :var-trace-btn) :enabled?))
+      (b/property (id :var-trace-btn-action) :enabled?))
     ;; dis/enable require-btn, update fqn in doc-tf, scroll within view
     (b/bind
       (b/selection (id :ns-lb))
@@ -525,9 +531,9 @@
               (when (var-traceable? vr)
                 (if (var-traced? vr)
                   (do (clojure.tools.trace/untrace-var* vr)
-                      (config! (id :var-trace-btn) :text "trace"))
+                      (config! (id :var-trace-btn-action) :name "Trace Var"))
                   (do (clojure.tools.trace/trace-var* vr)
-                      (config! (id :var-trace-btn) :text "untrace")))
+                      (config! (id :var-trace-btn-action) :name "Untrace Var")))
                 (selection! (id :vars-lb) (selection (id :vars-lb)))))))))
     ;;
     ;; select item in vars-lb => set associated fqn in doc-tf
@@ -880,9 +886,9 @@
       (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
                                  (id :fqn-from-selection-action) (id :open-url-from-selection-action)])
 
-      (config! ns-menu :items ["Load" :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
+      (config! ns-menu :items ["Require" :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
-      (config! vars-menu :items ["Trace" "Un-Map" "Un-Alias" :separator vars-categorized-cb vars-fqn-listing-cb vars-search-doc-also-cb])
+      (config! vars-menu :items [(id :var-trace-btn-action) "Un-Map" "Un-Alias" :separator vars-categorized-cb vars-fqn-listing-cb vars-search-doc-also-cb])
 
       
       (config! auto-refresh-browser-cb
@@ -931,7 +937,7 @@
       (config! ns-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
                                     (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
                                     (id :open-url-from-selection-action) :separator
-                                    "Load" :separator 
+                                    "Require" :separator 
                                     (id :ns-trace-btn-action) (id :ns-untrace-btn-action) 
                                     ;;:separator auto-refresh-browser-cb
                                     ])
@@ -940,7 +946,7 @@
       (config! vars-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
                                     (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
                                     (id :open-url-from-selection-action) :separator
-                                    "Trace" "Un-Map" "Un-Alias" 
+                                    (id :var-trace-btn-action) :separator "Un-Map" "Un-Alias" 
                                     ;;:separator vars-categorized-cb
                                     ;;vars-fqn-listing-cb vars-search-doc-also-cb
                                     ;;:separator auto-refresh-browser-cb
