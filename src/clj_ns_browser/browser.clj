@@ -81,13 +81,13 @@
 
 
 (defn font-size+
-  "Increase the fint-size of the widget w by 1."
+  "Increase the font-size of the widget w by 1."
   [w]
   (config! w :font {:size (+ 1 (.getSize (config w :font)))}))
 
 
 (defn font-size-
-  "Decrease the fint-size of the widget w by 1."
+  "Decrease the font-size of the widget w by 1."
   [w]
   (config! w :font {:size (- (.getSize (config w :font)) 1)}))
 
