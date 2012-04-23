@@ -31,7 +31,7 @@
 ;; to ease the selection, the function (select-id root kw) is used, which looks up
 ;; the widget/action/atom in root associated with keyword kw.
 ;; because a lot of the processing is done for a certain root, the select-id function
-;; is curried often like (let [id (partial select-id root)] ...), such
+;; is curried often like (letfn [(id [kw] (select-id root kw))] ...), such
 ;; that within the let form, the widgets can be selected with (id kw)
 ;; note that the actions that are searched for with select-id are maintained in
 ;; the global app-action-map and actions are added with (add-app-action kw actn)
@@ -81,13 +81,13 @@
 
 
 (defn font-size+
-  "Increase the fint-size of the widget w by 1."
+  "Increase the font-size of the widget w by 1."
   [w]
   (config! w :font {:size (+ 1 (.getSize (config w :font)))}))
 
 
 (defn font-size-
-  "Decrease the fint-size of the widget w by 1."
+  "Decrease the font-size of the widget w by 1."
   [w]
   (config! w :font {:size (- (.getSize (config w :font)) 1)}))
 
@@ -121,7 +121,7 @@
   Input: ss-id is keyword, symbol or string referring to widget :id value
   Output: reference to widget with :id equal to ss-id
   Usage: (select-id root :ns-lb))
-  or use with partial like: (let [id (partial select-id root)] (config (id :ns-lb) ...))"
+  or use with partial like: (letfn [(id [kw] (select-id root kw))] (config (id :ns-lb) ...))"
   [root ss-id]
   (let [str-id (if (keyword? ss-id) (name ss-id) (str ss-id))]
     (or
@@ -203,7 +203,7 @@
   or input: root and keyword-id lbx-kw for the listbox."
   ([lbx] (.ensureIndexIsVisible lbx (.getSelectedIndex lbx)))
   ([root lbx-kw]
-    (let [id (partial select-id root)]
+    (letfn [(id [kw] (select-id root kw))]
       (.ensureIndexIsVisible (id lbx-kw) (.getSelectedIndex (id lbx-kw))))))
 
 (defn find-in-doc-strings
@@ -269,9 +269,9 @@
             (let [id (partial select-id (to-root e))]
               (if-let [s (selection (id :doc-ta))]
                 (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
-                  (invoke-soon (browser-with-fqn "" fqn (new-clj-ns-browser))))
+                  (invoke-soon (browser-with-fqn *ns* fqn (new-clj-ns-browser))))
                 (if-let [fqn (config (id :doc-tf) :text)]
-                  (invoke-soon (browser-with-fqn "" fqn (new-clj-ns-browser)))
+                  (invoke-soon (browser-with-fqn *ns* fqn (new-clj-ns-browser)))
                   (invoke-soon (new-clj-ns-browser))))))))
 
 (add-app-action :go-github-action
@@ -326,7 +326,7 @@
 (add-app-action :fqn-from-clipboard-action
   (action :name "Paste - FQN from clipboard"
           :key  "menu V"
-          :handler (fn [e] (if-let [fqn (get-clip)] (invoke-soon (browser-with-fqn "" fqn (to-root e)))))))
+          :handler (fn [e] (if-let [fqn (get-clip)] (invoke-soon (browser-with-fqn *ns* fqn (to-root e)))))))
 (add-app-action :fqn-from-selection-action
   (action :name "FQN from selection"
           :key  "menu F"
@@ -334,7 +334,7 @@
             (let [id (partial select-id (to-root e))]
               (if-let [s (selection (id :doc-ta))]
                 (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
-                  (invoke-soon (browser-with-fqn "" fqn (to-root e)))))))))
+                  (invoke-soon (browser-with-fqn *ns* fqn (to-root e)))))))))
 (add-app-action :open-url-from-selection-action
   (action :name "Open URL from selection"
           :key  "menu I"
@@ -361,12 +361,33 @@
                                (.start (seesaw.meta/get-meta root :auto-refresh-browser-timer))
                                (.stop (seesaw.meta/get-meta root :auto-refresh-browser-timer)))))))
 
+(add-app-action :ns-trace-btn-action
+  (action :name "Trace NS"
+          :enabled? true
+          :handler (fn [e] (let [root (to-root e)]
+                             (letfn [(id [kw] (select-id root kw))]
+                               (when-let [ns-str (selection (id :ns-lb))]
+                                 (if-let [ns-ns (find-ns (symbol ns-str))]
+                                   (do (clojure.tools.trace/trace-ns* ns-ns)
+                                       (alert (str "Tracing all traceable vars in namespace: " ns-str)))
+                                   (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
+
+(add-app-action :ns-untrace-btn-action
+  (action :name "Untrace NS"
+          :enabled? true
+          :handler (fn [e] (let [root (to-root e)]
+                             (letfn [(id [kw] (select-id root kw))]
+                               (when-let [ns-str (selection (id :ns-lb))]
+                                 (if-let [ns-ns (find-ns (symbol ns-str))]
+                                   (do (clojure.tools.trace/untrace-ns* ns-ns)
+                                       (alert (str "Untraced all traced-vars in namespace: " ns-str)))
+                                   (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
 
 ;; Init functions called during construction of a frame with its widget hierarchy
 
 (defn init-before-bind
   [root]
-  (let [id (partial select-id root)]
+  (letfn [(id [kw] (select-id root kw))]
     (seesaw.meta/put-meta! root :atom-map (make-button-atom-map all-buttons-with-atoms))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     ;; ns
@@ -411,7 +432,7 @@
 
 (defn init-after-bind
   [root]
-  (let [id (partial select-id root)]
+  (letfn [(id [kw] (select-id root kw))]
     (invoke-soon
       (selection! (id :ns-cbx) "loaded")
       (selection! (id :vars-cbx) "publics")
@@ -421,7 +442,7 @@
 (defn bind-all
   "Collection of all the bind-statements that wire the clj-ns-browser events and widgets. (pretty amazing how easy it is to express those dependency-graphs!)"
   [root]
-  (let [id (partial select-id root)]
+  (letfn [(id [kw] (select-id root kw))]
     ;; # of entries in ns-lb => ns-entries-lbl
     (b/bind
       (b/property (id :ns-lb) :model)
@@ -460,13 +481,24 @@
                 true
                 false)))
             (b/property (id :ns-require-btn) :enabled?))
-        (b/bind
-          (b/transform (fn [ns]
-            (if (and ns (find-ns (symbol ns)))
-              (fqname ns)
-              "")))
-          (b/tee
-            (b/property (id :doc-tf) :text)))))
+          (b/bind
+            (b/transform (fn [ns-str]
+              (if (and ns-str (find-ns (symbol ns-str)))
+                true
+                false)))
+            (b/property (id :ns-trace-btn-action) :enabled?))
+          (b/bind
+            (b/transform (fn [ns-str]
+              (if (and ns-str (find-ns (symbol ns-str)))
+                true
+                false)))
+            (b/property (id :ns-untrace-btn-action) :enabled?))
+          (b/bind
+            (b/transform (fn [ns]
+              (if (and ns (find-ns (symbol ns)))
+                (fqname ns)
+                "")))
+            (b/property (id :doc-tf) :text))))
     ;; require-btn pressed =>
     ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
     (b/bind
@@ -761,7 +793,7 @@
 
 
 (defn set-font-handler! [root f]
-  (let [id (partial select-id root)]
+  (letfn [(id [kw] (select-id root kw))]
     (config! (id :doc-ta) :font {:name f :size (.getSize (config (id :doc-ta) :font))})
     (config! (id :doc-tf) :font {:name f :style :bold :size (.getSize (config (id :doc-tf) :font))})
     (config! (id :ns-lb) :font {:name f :size (.getSize (config (id :ns-lb) :font))})
@@ -796,7 +828,7 @@
   "Built menu for given browser-root-frame.
   Note that each frame has its own menu, which will be active when frame is in-focus."
   [root]
-  (let [id (partial select-id root)]
+  (letfn [(id [kw] (select-id root kw))]
 
     ;; built-up menu-bar
     (let [main-menu (menubar :id :main-menu)
@@ -848,7 +880,7 @@
       (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
                                  (id :fqn-from-selection-action) (id :open-url-from-selection-action)])
 
-      (config! ns-menu :items ["Load" "Trace"])
+      (config! ns-menu :items ["Load" :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
       (config! vars-menu :items ["Trace" "Un-Map" "Un-Alias" :separator vars-categorized-cb vars-fqn-listing-cb vars-search-doc-also-cb])
 
@@ -899,7 +931,8 @@
       (config! ns-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
                                     (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
                                     (id :open-url-from-selection-action) :separator
-                                    "Load" "Trace" 
+                                    "Load" :separator 
+                                    (id :ns-trace-btn-action) (id :ns-untrace-btn-action) 
                                     ;;:separator auto-refresh-browser-cb
                                     ])
                                     
@@ -946,7 +979,7 @@
     (config! root :id (keyword (str "browser-frame-" (.indexOf @browser-root-frms root))))
     (swap! browser-root-frm-map (fn [a] (assoc @browser-root-frm-map (config root :id) root)))
     (config! root :transfer-handler (seesaw.dnd/default-transfer-handler
-      :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn "" data root))]))
+      :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn *ns* data root))]))
     (listen root :component-hidden 
       (fn [e] (when (every? (fn [f] (not (config f :visible?))) @browser-root-frms) 
         (refresh-clj-ns-browser root)
@@ -970,13 +1003,14 @@
 
 (defn browser-with-fqn
   "Display a-ns/a-name in browser-frame."
+  ([a-name] (browser-with-fqn *ns* a-name (get-clj-ns-browser)))
   ([a-ns a-name] (browser-with-fqn a-ns a-name (get-clj-ns-browser)))
   ([a-ns a-name browser-frame]
     (let [root browser-frame
           id (partial select-id root)]
       (if-let [fqn (and a-name 
                         (or (string? a-name)(symbol? a-name))
-                        (fqname a-name))]
+                        (fqname a-ns a-name))]
         (let [sym1 (symbol fqn)
               name1 (name sym1)
               ns1 (try (namespace sym1)(catch Exception e))]
@@ -989,6 +1023,7 @@
               (selection! (id :vars-lb) name1)
               (ensure-selection-visible (id :ns-lb))
               (ensure-selection-visible (id :vars-lb)))
+              
             (if (find-ns (symbol name1))
               ;; should be namespace
               (invoke-soon
@@ -996,6 +1031,7 @@
                 (selection! (id :doc-cbx) "Doc")
                 (ensure-selection-visible (id :ns-lb))
                 (ensure-selection-visible (id :vars-lb)))
+                
               ;; else must be special-form or class
               (invoke-soon
                 (if (special-form? fqn)
@@ -1006,10 +1042,14 @@
                     (selection! (id :vars-lb) name1))
                   (do
                     (selection! (id :ns-lb) (str *ns*))
+                    (selection! (id :vars-cbx) "imports")
+                    (selection! (id :vars-lb) name1)
                     (selection! (id :doc-cbx) "Doc")))
                 (ensure-selection-visible (id :ns-lb))
                 (ensure-selection-visible (id :vars-lb)))))
-          (refresh-clj-ns-browser root)
-          fqn)
-        ))))
+            (refresh-clj-ns-browser root)
+            fqn)
+        (when-let [n-str (selection (id :ns-lb))]
+          (when (not= n-str (str a-ns))
+            (browser-with-fqn n-str a-name browser-frame)))))))
 
