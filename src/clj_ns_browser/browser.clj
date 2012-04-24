@@ -111,7 +111,8 @@
   Get the actions later thru the keyword: (get app-action-map kw).
   See also select-id."
   [kw actn]
-  (swap! app-action-map (fn [m k a] (assoc m k a)) kw actn))
+  (swap! app-action-map (fn [m k a] (assoc m k a)) kw actn)
+  actn)
 
 
 (defn select-id
@@ -162,7 +163,7 @@
 (def all-buttons-with-atoms
   "Used to auto-generate atoms and '-atom' keywords"
   [:ns-require-btn :browse-btn :edit-btn :clojuredocs-offline-rb :clojuredocs-online-rb 
-   :update-clojuredocs-btn :var-trace-btn :inspect-btn :color-coding-cb])
+   :update-clojuredocs-btn :var-trace-btn :inspect-btn :color-coding-cb :vars-fqn-listing-cb])
 
 (defn make-atom-kw [kw] (keyword (str (clj-ns-browser.utils/fqname kw) "-atom")))
 
@@ -348,8 +349,10 @@
   (action :name "Manual Refresh"
           :key  "menu R"
           :handler (fn [e]
-            (let [id (partial select-id (to-root e))]
-              (auto-refresh-browser-handler {:root (to-root e)})
+            (let [root (to-root e)
+                  id (partial select-id root)]
+              (show! (pack! root))
+              (auto-refresh-browser-handler {:root root})
               (ensure-selection-visible (id :ns-lb))
               (ensure-selection-visible (id :vars-lb))))))
 
@@ -390,6 +393,42 @@
                                        (alert (str "Untraced all traced-vars in namespace: " ns-str)))
                                    (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
 
+(add-app-action :vars-categorized-cb-action
+  (action :name "Categorized Listing"
+          :selected? false
+          :handler 
+            (fn [e] (let [root (to-root e)]
+                      (letfn [(id [kw] (select-id root kw))]
+                        (swap! group-vars-by-object-type-atom 
+                               (fn [_] (config (id :vars-categorized-cb-action) :selected?))))))))
+
+(add-app-action :vars-fqn-listing-cb-action
+  (action :name "FQN Listing"
+          :selected? false
+          :handler 
+            (fn [e] (let [root (to-root e)]
+                      (letfn [(id [kw] (select-id root kw))]
+                        (swap! (id :vars-fqn-listing-cb-atom) 
+                               (fn [_] (config (id :vars-fqn-listing-cb-action) :selected?))))))))
+
+(add-app-action :vars-unmap-btn-action
+  (action :name "Un-Map"
+          :enabled? false))
+
+(add-app-action :vars-unalias-btn-action
+  (action :name "Un-Alias"
+          :enabled? false))
+
+(add-app-action :ns-require-btn-action
+  (action :name "Require"
+          :enabled? false
+          :handler (fn [e] 
+                     (let [root (to-root e)]
+                       (letfn [(id [kw] (select-id root kw))]
+                         (swap! (id :ns-require-btn-atom) not))))))
+
+
+
 ;; Init functions called during construction of a frame with its widget hierarchy
 
 (defn init-before-bind
@@ -402,8 +441,6 @@
     (config! (id :ns-lb) :selection-mode :multi-interval) ;; experimental...
     (config! (id :vars-lb) :model [])
     (config! (id :ns-entries-lbl) :text "0")
-    (config! (id :ns-require-btn) :enabled? false)
-    (config! (id :ns-require-btn) :text "Require")
     (config! (id :doc-cbx) :model doc-cbx-value-list)
     (config! (id :edit-btn) :enabled? false)
     (config! (id :browse-btn) :enabled? false)
@@ -411,8 +448,8 @@
     (config! (id :inspect-btn) :enabled? false)
     (listen (id :inspect-btn)
       :action (fn [event] (swap! (id :inspect-btn-atom) not)))
-    (listen (id :ns-require-btn)
-      :action (fn [event] (swap! (id :ns-require-btn-atom) not)))
+    (config! (id :ns-require-btn) :action (id :ns-require-btn-action))
+    (config! (id :ns-require-btn-action) :enabled? false)
     (config! (id :var-trace-btn)
       :action (id :var-trace-btn-action))
     (listen (id :browse-btn)
@@ -486,7 +523,7 @@
               (if (and ns (some #(= ns %) @all-ns-unloaded-atom))
                 true
                 false)))
-            (b/property (id :ns-require-btn) :enabled?))
+            (b/property (id :ns-require-btn-action) :enabled?))
           (b/bind
             (b/transform (fn [ns-str]
               (if (and ns-str (find-ns (symbol ns-str)))
@@ -858,8 +895,11 @@
           clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
           clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
 
-          vars-fqn-listing-cb (checkbox-menu-item :text "FQN Listing" :id :vars-fqn-listing-cb)
-          vars-categorized-cb (checkbox-menu-item :text "Categorized Listing" :id :vars-categorized-cb)
+          vars-fqn-listing-cb (checkbox-menu-item :action (id :vars-fqn-listing-cb-action) :id :vars-fqn-listing-cb)
+          
+          vars-categorized-cb (checkbox-menu-item :action (id :vars-categorized-cb-action) 
+                                                  :id :vars-categorized-cb)
+          
           vars-search-doc-also-cb (checkbox-menu-item :text "Search Docs Also" :id :vars-search-doc-also-cb)
           
           auto-refresh-browser-cb (checkbox-menu-item :action (id :auto-refresh-browser-action) :id :auto-refresh-browser-cb)
@@ -886,9 +926,12 @@
       (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
                                  (id :fqn-from-selection-action) (id :open-url-from-selection-action)])
 
-      (config! ns-menu :items ["Require" :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
+      (config! ns-menu :items [(id :ns-require-btn-action) :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
-      (config! vars-menu :items [(id :var-trace-btn-action) "Un-Map" "Un-Alias" :separator vars-categorized-cb vars-fqn-listing-cb vars-search-doc-also-cb])
+      (config! vars-menu :items 
+        [(id :var-trace-btn-action) :separator (id :vars-unmap-btn-action) 
+         (id :vars-unalias-btn-action) :separator vars-categorized-cb 
+         vars-fqn-listing-cb vars-search-doc-also-cb])
 
       
       (config! auto-refresh-browser-cb
@@ -896,15 +939,7 @@
                                    (.start auto-refresh-browser-timer) 
                                    (.stop auto-refresh-browser-timer)))]
         :selected? false)
-        
-      (config! vars-categorized-cb 
-         :listen [:action (fn [e] (swap! group-vars-by-object-type-atom (fn [_] (config vars-categorized-cb :selected?))))]
-        :selected? false)
-      
-      (config! vars-fqn-listing-cb 
-         :listen [:action (fn [e] (swap! vars-fqn-listing-cb-atom (fn [_] (config vars-fqn-listing-cb :selected?))))]
-        :selected? false)
-      
+
       (config! vars-search-doc-also-cb 
          :listen [:action (fn [e] (swap! vars-search-doc-also-cb-atom (fn [_] (config vars-search-doc-also-cb :selected?))))]
         :selected? false)
@@ -934,21 +969,32 @@
                                     (id :zoom-in-action) (id :zoom-out-action)])
                                     
       (config! (id :ns-lb) :popup ns-lb-popup)
-      (config! ns-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
-                                    (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
-                                    (id :open-url-from-selection-action) :separator
-                                    "Require" :separator 
+      (config! ns-lb-popup :items [ (id :new-browser-action) 
+                                    :separator
+                                    (id :copy-fqn-action) 
+                                    (id :fqn-from-clipboard-action) 
+                                    (id :fqn-from-selection-action)
+                                    (id :open-url-from-selection-action) 
+                                    :separator
+                                    (id :ns-require-btn-action)
+                                    :separator 
                                     (id :ns-trace-btn-action) (id :ns-untrace-btn-action) 
                                     ;;:separator auto-refresh-browser-cb
                                     ])
                                     
       (config! (id :vars-lb) :popup vars-lb-popup)
-      (config! vars-lb-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
-                                    (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
-                                    (id :open-url-from-selection-action) :separator
-                                    (id :var-trace-btn-action) :separator "Un-Map" "Un-Alias" 
-                                    ;;:separator vars-categorized-cb
-                                    ;;vars-fqn-listing-cb vars-search-doc-also-cb
+      (config! vars-lb-popup :items [(id :new-browser-action) 
+                                    :separator 
+                                    (id :copy-fqn-action) (id :fqn-from-clipboard-action)
+                                    (id :fqn-from-selection-action) (id :open-url-from-selection-action) 
+                                    :separator
+                                    (id :var-trace-btn-action) 
+                                    :separator 
+                                    (id :vars-unmap-btn-action) (id :vars-unalias-btn-action) 
+                                    :separator 
+                                    (checkbox-menu-item :action (id :vars-categorized-cb-action))
+                                    (checkbox-menu-item :action (id :vars-fqn-listing-cb-action))
+                                    ;; vars-search-doc-also-cb
                                     ;;:separator auto-refresh-browser-cb
                                     ])
 
