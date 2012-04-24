@@ -143,18 +143,23 @@
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
 (def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
-                          "privates" "refers" "special-forms" "all-publics"
-                          "search-all-docs"])
-(def vars-cbx-value-fn-map {"aliases"   ns-aliases
-                            "imports"   ns-imports
-                            "interns"   ns-interns
-                            "map"       ns-map
-                            "publics"   ns-publics
-                            "privates"  ns-privates
-                            "refers"    ns-refers
-                            "special-forms" ns-special-forms
-                            "all-publics" all-publics
-                            "search-all-docs"  identity  ; ret value not used
+                          "privates" "refers" "special-forms"])
+(def vars-cbx-value-fn-map {"aliases"  #(symbols-of-ns-coll
+                                         :aliases ns-aliases %1 %2 %3)
+                            "imports"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-imports %1 %2 %3)
+                            "interns"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns %1 %2 %3)
+                            "map"      #(symbols-of-ns-coll
+                                         :ns-map-subset ns-map %1 %2 %3)
+                            "publics"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-publics %1 %2 %3)
+                            "privates" #(symbols-of-ns-coll
+                                         :ns-map-subset ns-privates %1 %2 %3)
+                            "refers"   #(symbols-of-ns-coll
+                                         :ns-map-subset ns-refers %1 %2 %3)
+                            "special-forms" #(symbols-of-ns-coll
+                                              :special-forms ns-special-forms %1 %2 %3)
                             })
 
 (def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
@@ -190,13 +195,27 @@
 ;; bind specific fns
 
 ;;(b/transform regx-tf-filter :ns-filter-tf)
+
+;; When filtering namespaces, symbol-info is a collection of strings.
+;; When filtering symbols within one or more namespaces, symbol-info
+;; is a collection of maps, each having string values for the keys
+;; :name-to-search and, if (deref search-doc-strings-atom) is true,
+;; :doc-string.
+
 (defn regx-tf-filter
   "filter for use in bind that filters string-list s-l with regex of text-field t-f"
-  [{:keys [string-seq already-filtered]} t-f]
-  (if already-filtered
-    string-seq
-    (when-let [r (try (re-pattern (config t-f :text)) (catch Exception e nil))]
-      (filter #(re-find r %) string-seq))))
+  [symbol-info t-f search-doc-strings-atom]
+  (let [search-doc-strings? (deref search-doc-strings-atom)]
+    (when-let [r (try (re-pattern (config t-f :text))
+                      (catch Exception e nil))]
+      (filter (fn [info]
+                (if (string? info)
+                  (re-find r info)
+                  (or (re-find r (:name-to-search info))
+                      (and search-doc-strings?
+                           (not (nil? (:doc-string info)))
+                           (re-find r (:doc-string info))))))
+              symbol-info))))
 
 (defn ensure-selection-visible
   "Scroll the selection of a listbox within view.
@@ -233,24 +252,23 @@
    :else obj-type-str))
 
 
-(defn group-by-object-type [symbol-str-seq fqns? ns-str]
-  (let [symbol-info (map (fn [s]
-                               (let [fqn (if fqns? s (str ns-str "/" s))
-                                     obj-type-str (-> fqn
-                                                      ;;d2m/get-docs-map
-                                                      better-get-docs-map
-                                                      :object-type-str
-                                                      simplify-object-type)]
-                                 {:orig-str s
-                                  :fqn-str fqn
-                                  :obj-type-str obj-type-str}))
-                             symbol-str-seq)
+(defn group-by-object-type [symbol-info]
+  (let [symbol-info (map (fn [info]
+                           (merge info {:obj-type-str
+                                        (case (:rough-category info)
+                                          :aliases "Alias"
+                                          :special-forms "Special Form"
+                                          (-> (:fqn-str info)
+                                              better-get-docs-map
+                                              :object-type-str
+                                              simplify-object-type))}))
+                         symbol-info)
         groups (group-by :obj-type-str symbol-info)]
     (apply concat (interpose
                    [ " " ]
-                   (map (fn [[obj-type-str l]]
+                   (map (fn [[obj-type-str info]]
                           (concat [ (str "        " obj-type-str) ]
-                                  (sort (map :orig-str l))))
+                                  (sort (map :display-str info))))
                         (sort-by first (seq groups)))))))
 
 
@@ -605,14 +623,16 @@
       (b/transform (fn [o]
         (let [v (selection (id :ns-cbx))]
           (when (= v "unloaded") (config! (id :doc-tf) :text "")(config! (id :doc-ta) :text ""))
-          {:already-filtered false :string-seq ((get ns-cbx-value-fn-map v))})))
-      (b/transform regx-tf-filter (id :ns-filter-tf))
+          ((get ns-cbx-value-fn-map v)))))
+      (b/transform regx-tf-filter (id :ns-filter-tf) (atom false))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
         (if (= l (seesaw.meta/get-meta root :last-ns-lb))
           false
           (do 
             (seesaw.meta/put-meta! root :last-ns-lb l)
             true))))
+      (b/filter (fn [symbol-info]
+                  (sort (map :display-str symbol-info))))
       (b/notify-soon)
       (b/property (id :ns-lb) :model))
     ;;
@@ -623,32 +643,25 @@
         [(b/selection (id :vars-cbx))
          (b/selection (id :ns-lb) {:multi? true})
          (id :vars-filter-tf)
+         vars-search-doc-also-cb-atom
          vars-lb-refresh-atom
          group-vars-by-object-type-atom])
       (b/transform (fn [o]
-        (let [n-s (selection (id :ns-lb))
-              ns-list (selection (id :ns-lb) {:multi? true})
-              n (and n-s (find-ns (symbol n-s)))
+        (let [ns-list (selection (id :ns-lb) {:multi? true})
+              n (and ns-list (map #(find-ns (symbol %)) ns-list))
+              always-display-fqn? false  ; tbd: make this user-configurable
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (if n
-            (let [already-filtered (= v "search-all-docs")
-                  string-seq (if already-filtered
-                               (find-in-doc-strings (config (id :vars-filter-tf)
-                                                            :text))
-                               (map str (keys (f n))))]
-              {:already-filtered already-filtered :string-seq string-seq})
-            {:already-filtered false :string-seq []}))))
-      (b/transform regx-tf-filter (id :vars-filter-tf))
-      (b/transform (fn [symbol-str-seq]
+            (f n (or always-display-fqn? (> (count n) 1))
+               @vars-search-doc-also-cb-atom)
+            []))))
+      (b/transform regx-tf-filter (id :vars-filter-tf)
+                   vars-search-doc-also-cb-atom)
+      (b/transform (fn [symbol-info]
         (if @group-vars-by-object-type-atom
-          (let [n-s (selection (id :ns-lb))
-                ns-list (selection (id :ns-lb) {:multi? true})
-                n (and n-s (find-ns (symbol n-s)))
-                v (selection (id :vars-cbx))
-                fqns? (#{"all-publics" "search-all-docs"} v)]
-            (group-by-object-type symbol-str-seq fqns? n-s))
-          (sort symbol-str-seq))))
+          (group-by-object-type symbol-info)
+          (sort (map #(str (:display-sym %)) symbol-info)))))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
         (if (= l (seesaw.meta/get-meta root :last-vars-lb))
           false

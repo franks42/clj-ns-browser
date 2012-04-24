@@ -96,7 +96,7 @@ public class BrowserForm extends JPanel {
 		add(comboBox_1, "cell 1 1");
 		
 		JComboBox comboBox = new JComboBox();
-		comboBox.setModel(new DefaultComboBoxModel(new String[] {"publics", "privates", "interns", "refers", "imports", "map", "aliases", "special-forms", "all-publics", "search-all-docs"}));
+		comboBox.setModel(new DefaultComboBoxModel(new String[] {"publics", "privates", "interns", "refers", "imports", "map", "aliases", "special-forms"}));
 		comboBox.setName("vars-cbx");
 		add(comboBox, "cell 3 1");
 		
