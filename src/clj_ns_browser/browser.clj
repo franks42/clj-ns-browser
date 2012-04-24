@@ -518,31 +518,34 @@
       (b/property (id :var-trace-btn-action) :enabled?))
     ;; dis/enable require-btn, update fqn in doc-tf, scroll within view
     (b/bind
-      (b/selection (id :ns-lb))
+      (b/selection (id :ns-lb) {:multi? true})
         (b/tee
           (b/bind
-            (b/transform (fn [ns]
-              (if (and ns (some #(= ns %) @all-ns-unloaded-atom))
+            (b/transform (fn [ns-list]
+              (if (and ns-list (= 1 (count ns-list)) (some #(= (first ns-list) %) @all-ns-unloaded-atom))
                 true
                 false)))
             (b/property (id :ns-require-btn-action) :enabled?))
           (b/bind
-            (b/transform (fn [ns-str]
-              (if (and ns-str (find-ns (symbol ns-str)))
-                true
-                false)))
+            (b/transform (fn [ns-list]
+              (let [ns-str (and ns-list (first ns-list))]
+                (if (and ns-str (find-ns (symbol ns-str)))
+                  true
+                  false))))
             (b/property (id :ns-trace-btn-action) :enabled?))
           (b/bind
-            (b/transform (fn [ns-str]
-              (if (and ns-str (find-ns (symbol ns-str)))
-                true
-                false)))
+            (b/transform (fn [ns-list]
+              (let [ns-str (and ns-list (first ns-list))]
+                (if (and ns-str (find-ns (symbol ns-str)))
+                  true
+                  false))))
             (b/property (id :ns-untrace-btn-action) :enabled?))
           (b/bind
-            (b/transform (fn [ns]
-              (if (and ns (find-ns (symbol ns)))
-                (fqname ns)
-                "")))
+            (b/transform (fn [ns-list]
+              (let [ns-str (and ns-list (first ns-list))]
+                (if (and ns-str (find-ns (symbol ns-str)))
+                  (fqname ns-str)
+                  ""))))
             (b/property (id :doc-tf) :text))))
     ;; require-btn pressed =>
     ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
@@ -619,12 +622,13 @@
     (b/bind
       (apply b/funnel
         [(b/selection (id :vars-cbx))
-         (b/selection (id :ns-lb))
+         (b/selection (id :ns-lb) {:multi? true})
          (id :vars-filter-tf)
          vars-lb-refresh-atom
          group-vars-by-object-type-atom])
       (b/transform (fn [o]
         (let [n-s (selection (id :ns-lb))
+              ns-list (selection (id :ns-lb) {:multi? true})
               n (and n-s (find-ns (symbol n-s)))
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
@@ -640,6 +644,7 @@
       (b/transform (fn [symbol-str-seq]
         (if @group-vars-by-object-type-atom
           (let [n-s (selection (id :ns-lb))
+                ns-list (selection (id :ns-lb) {:multi? true})
                 n (and n-s (find-ns (symbol n-s)))
                 v (selection (id :vars-cbx))
                 fqns? (#{"all-publics" "search-all-docs"} v)]
