@@ -7,11 +7,11 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.core
-  (:use [clj-ns-browser.browser]
-        [clj-ns-browser.sdoc]
+  (:use [clj-ns-browser.sdoc]
         [seesaw.core]
         [seesaw.dev]
-        [clj-info]))
+        [clj-info]
+        [clj-ns-browser.browser]))
 
 
 (defn -main [& args]

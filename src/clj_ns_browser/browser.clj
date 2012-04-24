@@ -435,6 +435,8 @@
   [root]
   (letfn [(id [kw] (select-id root kw))]
     (seesaw.meta/put-meta! root :atom-map (make-button-atom-map all-buttons-with-atoms))
+    (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
+    (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     ;; ns
     (config! (id :ns-lb) :model @all-ns-loaded-atom)
@@ -1059,22 +1061,25 @@
   ([a-ns a-name] (browser-with-fqn a-ns a-name (get-clj-ns-browser)))
   ([a-ns a-name browser-frame]
     (let [root browser-frame
-          id (partial select-id root)]
+          id (partial select-id root)
+          n-str (selection (id :ns-lb))]
       (if-let [fqn (and a-name 
                         (or (string? a-name)(symbol? a-name))
-                        (fqname a-ns a-name))]
+                        (fqname (or a-ns n-str *ns*) a-name))]
         (let [sym1 (symbol fqn)
               name1 (name sym1)
               ns1 (try (namespace sym1)(catch Exception e))]
+          (println "ns1,name1,fqn" ns1 name1 fqn)
           (if ns1
             ;; we have a fq-var as a-ns/a-name
             (invoke-soon
               (selection! (id :ns-cbx) "loaded")
-              (selection! (id :ns-lb) ns1)
               (selection! (id :vars-cbx) "publics")
-              (selection! (id :vars-lb) name1)
-              (ensure-selection-visible (id :ns-lb))
-              (ensure-selection-visible (id :vars-lb)))
+              (selection! (id :ns-lb) ns1)
+              (invoke-later 
+                (selection! (id :vars-lb) name1)
+                (ensure-selection-visible (id :ns-lb))
+                (ensure-selection-visible (id :vars-lb))))
               
             (if (find-ns (symbol name1))
               ;; should be namespace
@@ -1101,7 +1106,6 @@
                 (ensure-selection-visible (id :vars-lb)))))
             (refresh-clj-ns-browser root)
             fqn)
-        (when-let [n-str (selection (id :ns-lb))]
-          (when (not= n-str (str a-ns))
-            (browser-with-fqn n-str a-name browser-frame)))))))
+        (when (nil? a-ns)
+            (browser-with-fqn *ns* a-name browser-frame))))))
 
