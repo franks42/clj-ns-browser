@@ -295,7 +295,7 @@
 (add-app-action :go-about-action
   (action :name "About..."
           :handler (fn [a] (invoke-later (alert (str "Clojure Namespace Browser (" clj-ns-browser-version ")" \newline
-            "Copyright (C) 2012 - Frank Siebenlist" \newline
+            "Copyright (C) 2012 - Frank Siebenlist and Andy Fingerhut" \newline
             "Distributed under the Eclipse Public License"))))))
 
 (add-app-action :zoom-in-action
@@ -1073,7 +1073,6 @@
         (let [sym1 (symbol fqn)
               name1 (name sym1)
               ns1 (try (namespace sym1)(catch Exception e))]
-          (println "ns1,name1,fqn" ns1 name1 fqn)
           (if ns1
             ;; we have a fq-var as a-ns/a-name
             (invoke-soon
