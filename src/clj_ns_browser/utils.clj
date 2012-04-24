@@ -93,12 +93,43 @@
 (defn ns-special-forms [& no-op]
   '{"def" def "if" if "do" do "let" let "quote" quote "var" var "fn" fn "loop" loop "recur" recur "throw" throw "try" try "monitor-enter" monitor-enter "monitor-exit" monitor-exit "dot" dot "new" new "set!" set!})
 
-(defn all-publics [& args]
-  (zipmap (mapcat (fn [ns]
-                    (map #(symbol (str ns) (str %))
-                         (keys (ns-publics ns))))
-                  (all-ns))
-          (repeat nil)))
+(defn symbols-of-ns-coll [ns-action f ns-coll display-fqn? search-doc-strings?]
+  (let [g (case ns-action
+            (:aliases :special-forms) (fn [[k v]]
+                                        {:symbol k
+                                         :rough-category ns-action
+                                         :var-class-or-ns v
+                                         :doc-string nil ; TBD: Fill this in
+                                         :fqn-sym k
+                                         :fqn-str (str k)
+                                         :display-sym k
+                                         :display-str (str k)
+                                         :name-to-search (str k)})
+            :ns-map-subset (fn [[sym var-or-class]]
+                             (let [fqn-sym (when (instance? clojure.lang.Var
+                                                            var-or-class)
+                                             ;; TBD: There is probably
+                                             ;; a faster way to do
+                                             ;; this.
+                                             (symbol (str (.ns var-or-class))
+                                                     (str sym)))
+                                   ds (if (and display-fqn? fqn-sym)
+                                        fqn-sym
+                                        sym)]
+                             {:symbol sym
+                              :rough-category ns-action
+                              :var-class-or-ns var-or-class
+                              :doc-string (when search-doc-strings?
+                                            (:doc (meta var-or-class)))
+                              :fqn-sym fqn-sym
+                              :fqn-str (if fqn-sym
+                                         (str fqn-sym)
+                                         (str sym))
+                              :display-sym ds
+                              :display-str (str ds)
+                              :name-to-search (str sym)})))]
+    (set (mapcat (fn [ns] (map g (f ns)))
+                 ns-coll))))
 
 (defn filter-key [keyfn pred amap]
   (loop [ret {} es (seq amap)]
