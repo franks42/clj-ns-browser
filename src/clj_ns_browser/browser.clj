@@ -584,15 +584,14 @@
       (b/transform (fn [v]
         (if v
           (let [fqn (if (= "aliases" (selection (id :vars-cbx)))
-                      (str (get (ns-aliases (the-ns (symbol
-                                                     (selection (id :ns-lb)))))
-                                (symbol v)))
+                      (when-let [n (get (ns-aliases
+                                         (the-ns (symbol
+                                                  (selection (id :ns-lb)))))
+                                        (symbol v))]
+                        (str n))
                       (fqname (selection (id :ns-lb)) v))]
-            (if (and fqn (not= fqn ""))
-              fqn
-              (when (= (selection (id :vars-cbx)) "aliases")
-                (when-let [n (get (ns-aliases (symbol (selection (id :ns-lb)))) (symbol v))]
-                  (str n))))))))
+            (if (not= fqn "")
+              fqn)))))
       (b/tee
           (b/property (id :doc-tf) :text)))
     ;;
