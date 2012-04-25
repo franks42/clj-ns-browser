@@ -11,7 +11,8 @@
         [seesaw.core]
         [seesaw.dev]
         [clj-info]
-        [clj-ns-browser.browser]))
+        [clj-ns-browser.browser]
+        [alex-and-georges.debug-repl]))
 
 
 (defn -main [& args]

@@ -24,7 +24,8 @@
         [seesaw.border]
         [seesaw.mig]
         [seesaw.dev]
-        [clj-info]))
+        [clj-info]
+        [alex-and-georges.debug-repl]))
 
 
 ;; Much of the processing depends on selecting widgets/atoms/actions from frame-trees.
