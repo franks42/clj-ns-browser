@@ -259,6 +259,7 @@
   (let [symbol-info (map (fn [info]
                            (merge info {:obj-type-str
                                         (case (:rough-category info)
+                                          :msg-to-user "Warning message"
                                           :aliases "Alias"
                                           :special-forms "Special Form"
                                           (-> (:fqn-str info)
@@ -664,7 +665,7 @@
       (b/transform (fn [symbol-info]
         (if @group-vars-by-object-type-atom
           (group-by-object-type symbol-info)
-          (sort (map #(str (:display-sym %)) symbol-info)))))
+          (sort (map :display-str symbol-info)))))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
         (if (= l (seesaw.meta/get-meta root :last-vars-lb))
           false

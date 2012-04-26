@@ -128,8 +128,13 @@
                               :display-sym ds
                               :display-str (str ds)
                               :name-to-search (str sym)})))]
-    (set (mapcat (fn [ns] (map g (f ns)))
-                 ns-coll))))
+    (set (if (and (= ns-action :aliases)
+                  (> (count ns-coll) 1))
+           [ {:name-to-search ""
+              :rough-category :msg-to-user
+              :display-str "select only one ns for aliases" } ]
+           (mapcat (fn [ns] (map g (f ns)))
+                   ns-coll)))))
 
 (defn filter-key [keyfn pred amap]
   (loop [ret {} es (seq amap)]
