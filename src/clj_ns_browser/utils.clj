@@ -206,21 +206,23 @@
   ([ns n]
     (let [n-str (str n)
           n-sym (symbol n-str)]
-      (if (some #(= % n-str) special-forms) n-str
-        (if-let [n-ns (find-ns n-sym)]
-          (str n-ns)
-          (if-let [n-class (= (type n) java.lang.Class)]
-            (.getName n)
-            (when-let [ns-ns (if (= (type ns) clojure.lang.Namespace)
-                               ns
-                               (find-ns (symbol (str ns))))]
-              (if-let [var-n (when (var? n) (str (.ns n) "/" (.sym n)))]
-                var-n
-                (let [n-sym (symbol (str n))]
-                  (when-let [v-n (try (ns-resolve ns-ns n-sym)(catch Exception e))]
-                    (if (var? v-n)
-                      (str (.ns v-n) "/" (.sym v-n))
-                      (.getName v-n))))))))))))
+      (if (= n-str "clojure.core//")
+        "clojure.core//"  ;; special corner case :-(
+        (if (some #(= % n-str) special-forms) n-str
+          (if-let [n-ns (find-ns n-sym)]
+            (str n-ns)
+            (if-let [n-class (= (type n) java.lang.Class)]
+              (.getName n)
+              (when-let [ns-ns (if (= (type ns) clojure.lang.Namespace)
+                                 ns
+                                 (find-ns (symbol (str ns))))]
+                (if-let [var-n (when (var? n) (str (.ns n) "/" (.sym n)))]
+                  var-n
+                  (let [n-sym (symbol (str n))]
+                    (when-let [v-n (try (ns-resolve ns-ns n-sym)(catch Exception e))]
+                      (if (var? v-n)
+                        (str (.ns v-n) "/" (.sym v-n))
+                        (.getName v-n)))))))))))))
 
 
 (defn ns-name-class-str
@@ -242,12 +244,13 @@
 
 (defn resolve-fqname
   "Returns the resolved fully qualified name fqn (string) or nil."
-  [fqn]
-  (when (and (string? fqn) (not= fqn ""))
-    (if-let [ns (find-ns (symbol fqn))]
-      ns
-      (when-let [var-or-class (try (resolve *ns* (symbol fqn))(catch Exception e))]
-        var-or-class))))
+  [a-fqn]
+  (when (and (string? a-fqn) (not= a-fqn ""))
+    (let [fqn (if (= a-fqn "clojure.core//") "/" a-fqn)] ;; special corner case :-(
+      (if-let [ns (find-ns (symbol fqn))]
+        ns
+        (when-let [var-or-class (try (resolve *ns* (symbol fqn))(catch Exception e))]
+          var-or-class)))))
 
 
 (defn pprint-str
