@@ -12,6 +12,7 @@
             [seesaw.bind :as b]
             [clojure.java.browse]
             [clojure.java.shell]
+            [clojure.java.io]
             [clojure.string :as str]
             [clj-info.doc2map :as d2m]
             [clj-ns-browser.inspector]
@@ -824,7 +825,7 @@
       (b/transform (fn [& o]
         (if (config (id :clojuredocs-offline-rb) :selected?)
           (let [f (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt")]
-            (if (= 0 (:exit (clojure.java.shell/sh "bash" "-c" (str "[ -f " f " ];" ))))
+            (if (.exists (clojure.java.io/as-file f))
               (let [s (with-out-str (cd-client.core/set-local-mode! f))]
                 (alert (str "Note: Locally cached ClojureDocs copy will be used" \newline s)))
               (do (alert "No locally cached ClojureDocs repo found - update first")
