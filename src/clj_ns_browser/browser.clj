@@ -449,6 +449,23 @@
                        (letfn [(id [kw] (select-id root kw))]
                          (swap! (id :ns-require-btn-atom) not))))))
 
+(add-app-action :fqn-history-back-action
+  (action :name "Previous FQN"
+          :key  "menu B"
+          :enabled? true
+          :handler (fn [e] 
+           (let [root (to-root e)]
+             (letfn [(id [kw] (select-id root kw))]
+               (let [atm (seesaw.meta/get-meta root :fqn-history-list-atom)
+                     stck @atm]
+                 (when-let [p (and (not-empty stck) (pop stck))]
+                   (when-let [fqn (peek p)]
+                      (invoke-soon 
+                        (swap! atm (fn [ll] 
+                          (if (and (not-empty ll) (not-empty (pop ll)))
+                            (pop (pop ll)) 
+                            [])))
+                        (browser-with-fqn *ns* fqn root))))))))))
 
 
 ;; Init functions called during construction of a frame with its widget hierarchy
@@ -457,6 +474,7 @@
   [root]
   (letfn [(id [kw] (select-id root kw))]
     (seesaw.meta/put-meta! root :atom-map (make-button-atom-map all-buttons-with-atoms))
+    (seesaw.meta/put-meta! root :fqn-history-list-atom (atom []))
     (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
     (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
@@ -615,7 +633,11 @@
                                         (symbol v))]
                         (str n))
                       (fqname (selection (id :ns-lb)) v))]
-            (if (not= fqn "")
+            (when (not= fqn "")
+              ;; update fqn-history-list
+              (let [l (seesaw.meta/get-meta root :fqn-history-list-atom)]
+                (when-not (= (peek @l) fqn)
+                      (swap! l (fn [ll] (conj ll fqn)))))
               fqn)))))
       (b/tee
           (b/property (id :doc-tf) :text)))
@@ -952,7 +974,8 @@
       (config! file-menu :items [(id :new-browser-action)])
 
       (config! edit-menu :items [(id :copy-fqn-action) (id :fqn-from-clipboard-action)
-                                 (id :fqn-from-selection-action) (id :open-url-from-selection-action)])
+                                 (id :fqn-from-selection-action) (id :open-url-from-selection-action)
+                                  :separator (id :fqn-history-back-action)])
 
       (config! ns-menu :items [(id :ns-require-btn-action) :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
@@ -992,7 +1015,8 @@
       (config! (id :doc-ta) :popup doc-ta-popup)
       (config! doc-ta-popup :items [(id :new-browser-action) :separator (id :copy-fqn-action) 
                                     (id :fqn-from-clipboard-action) (id :fqn-from-selection-action)
-                                    (id :open-url-from-selection-action) :separator
+                                    (id :open-url-from-selection-action)
+                                    :separator (id :fqn-history-back-action) :separator
                                     ;;auto-refresh-browser-cb :separator
                                     (id :zoom-in-action) (id :zoom-out-action)])
                                     
@@ -1002,7 +1026,8 @@
                                     (id :copy-fqn-action) 
                                     (id :fqn-from-clipboard-action) 
                                     (id :fqn-from-selection-action)
-                                    (id :open-url-from-selection-action) 
+                                    (id :open-url-from-selection-action)
+                                    :separator (id :fqn-history-back-action)
                                     :separator
                                     (id :ns-require-btn-action)
                                     :separator 
@@ -1014,7 +1039,8 @@
       (config! vars-lb-popup :items [(id :new-browser-action) 
                                     :separator 
                                     (id :copy-fqn-action) (id :fqn-from-clipboard-action)
-                                    (id :fqn-from-selection-action) (id :open-url-from-selection-action) 
+                                    (id :fqn-from-selection-action) (id :open-url-from-selection-action)
+                                    :separator (id :fqn-history-back-action)
                                     :separator
                                     (id :var-trace-btn-action) 
                                     :separator 
