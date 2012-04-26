@@ -86,12 +86,12 @@
 ;;
 
 (def special-forms
-  (sort (map name '[def if do let quote var fn loop recur throw try monitor-enter monitor-exit dot new set!])))
+  (sort (map name '[def if do let quote var fn loop recur throw try monitor-enter monitor-exit . new set!])))
 
 (defn special-form? [n-str] (some #(= % n-str) special-forms))
 
 (defn ns-special-forms [& no-op]
-  '{"def" def "if" if "do" do "let" let "quote" quote "var" var "fn" fn "loop" loop "recur" recur "throw" throw "try" try "monitor-enter" monitor-enter "monitor-exit" monitor-exit "dot" dot "new" new "set!" set!})
+  '{"def" def "if" if "do" do "let" let "quote" quote "var" var "fn" fn "loop" loop "recur" recur "throw" throw "try" try "monitor-enter" monitor-enter "monitor-exit" monitor-exit "." . "new" new "set!" set!})
 
 (defn symbols-of-ns-coll [ns-action f ns-coll display-fqn? search-doc-strings?]
   (let [g (case ns-action
