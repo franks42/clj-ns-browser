@@ -17,8 +17,10 @@
         [clojure.pprint :only [pprint]]
         [clj-info.doc2map :only [get-docs-map]]
         [clj-info.doc2txt :only [doc2txt]]
-        [clj-info.doc2html :only [doc2html]]))
+        [clj-info.doc2html :only [doc2html]]
+        [alex-and-georges.debug-repl]))
 
+(declare fqname)
 
 ;; Two convenience function for clojure.tools.trace
 ;; that should ideally be part of that library
@@ -106,13 +108,15 @@
                                          :display-str (str k)
                                          :name-to-search (str k)})
             :ns-map-subset (fn [[sym var-or-class]]
-                             (let [fqn-sym (when (instance? clojure.lang.Var
-                                                            var-or-class)
-                                             ;; TBD: There is probably
-                                             ;; a faster way to do
-                                             ;; this.
-                                             (symbol (str (.ns var-or-class))
-                                                     (str sym)))
+                             (let [fqn-str-or-nil (fqname var-or-class)
+                                   fqn-sym (when fqn-str-or-nil (symbol fqn-str-or-nil))
+;;                                             (when (instance? clojure.lang.Var
+;;                                                             var-or-class)
+;;                                              ;; TBD: There is probably
+;;                                              ;; a faster way to do
+;;                                              ;; this.
+;;                                              (symbol (str (.ns var-or-class))
+;;                                                      (str sym)))
                                    ds (if (and display-fqn? fqn-sym)
                                         fqn-sym
                                         sym)]
