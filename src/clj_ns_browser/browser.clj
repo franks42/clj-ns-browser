@@ -642,6 +642,15 @@
       (b/tee
           (b/property (id :doc-tf) :text)))
     ;;
+    ;; dis/enable prev fqn button/menu when no history available
+    (b/bind
+      (seesaw.meta/get-meta root :fqn-history-list-atom)
+      (b/transform (fn [o]
+        (if (> (count @(seesaw.meta/get-meta root :fqn-history-list-atom)) 1)
+          true
+          false)))
+      (b/property (id :fqn-history-back-action) :enabled?))
+    ;;
     ;; (un-)loaded ns-cbx and regex filter tf =>
     ;; updated ns-list in ns-lb
     (b/bind
