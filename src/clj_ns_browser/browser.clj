@@ -517,11 +517,13 @@
       (b/property (id :ns-lb) :model)
       (b/transform widget-model-count (id :ns-lb))
       (id :ns-entries-lbl))
+    ;; following doesn't work with categorized display
+    ;;   - update instead when vars-entries-lbl when vars-lb is written
     ;; # of entries in vars-lb => vars-entries-lbl
-    (b/bind
-      (b/property (id :vars-lb) :model)
-      (b/transform widget-model-count (id :vars-lb))
-      (id :vars-entries-lbl))
+;;     (b/bind
+;;       (b/property (id :vars-lb) :model)
+;;       (b/transform widget-model-count (id :vars-lb))
+;;       (id :vars-entries-lbl))
     ;; new ns selected in ns-lb =>
     (b/bind
       (b/selection (id :doc-tf))
@@ -665,6 +667,7 @@
       (b/transform regx-tf-filter (id :vars-filter-tf)
                    vars-search-doc-also-cb-atom)
       (b/transform (fn [symbol-info]
+        (config! (id :vars-entries-lbl) :text (count symbol-info))
         (if @group-vars-by-object-type-atom
           (group-by-object-type symbol-info)
           (sort (map :display-str symbol-info)))))
