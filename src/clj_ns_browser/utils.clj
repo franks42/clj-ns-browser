@@ -572,3 +572,12 @@ only public symbols of other namespaces."
 the results."
   [str-or-pattern & opts]
   (pprint (sort (apply apropos str-or-pattern opts))))
+
+(defn ns-refers-wo-core 
+  "Same as ns-refers, but without the clojure.core contribution."
+  [a-ns]
+  (let [refers (ns-refers a-ns)
+        refers-keys (set (keys refers))
+        core-keys (set (keys (ns-publics (find-ns 'clojure.core))))
+        refers-keys-wo (clojure.set/difference refers-keys core-keys)]
+    (select-keys refers refers-keys-wo)))

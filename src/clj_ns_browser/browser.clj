@@ -144,7 +144,7 @@
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
 (def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
-                          "privates" "refers" "special-forms"])
+                          "privates" "refers" "refers w/o core" "special-forms"])
 (def vars-cbx-value-fn-map {"aliases"  #(symbols-of-ns-coll
                                          :aliases ns-aliases %1 %2 %3)
                             "imports"  #(symbols-of-ns-coll
@@ -159,6 +159,8 @@
                                          :ns-map-subset ns-privates %1 %2 %3)
                             "refers"   #(symbols-of-ns-coll
                                          :ns-map-subset ns-refers %1 %2 %3)
+                            "refers w/o core"   #(symbols-of-ns-coll
+                                         :ns-map-subset ns-refers-wo-core %1 %2 %3)
                             "special-forms" #(symbols-of-ns-coll
                                               :special-forms ns-special-forms %1 %2 %3)
                             })
