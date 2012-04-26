@@ -1085,7 +1085,7 @@
     (config! root :id (keyword (str "browser-frame-" (.indexOf @browser-root-frms root))))
     (swap! browser-root-frm-map (fn [a] (assoc @browser-root-frm-map (config root :id) root)))
     (config! root :transfer-handler (seesaw.dnd/default-transfer-handler
-      :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn *ns* data root))]))
+      :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn nil data root))]))
     (listen root :component-hidden 
       (fn [e] (when (every? (fn [f] (not (config f :visible?))) @browser-root-frms) 
         (refresh-clj-ns-browser root)
