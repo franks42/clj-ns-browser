@@ -191,7 +191,6 @@
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
 (def group-vars-by-object-type-atom (atom false))
 (def vars-search-doc-also-cb-atom (atom false))
-(def vars-fqn-listing-cb-atom (atom false))
 (def ns-lb-refresh-atom (atom true))
 (def vars-lb-refresh-atom (atom true))
 
@@ -430,8 +429,8 @@
           :handler 
             (fn [e] (let [root (to-root e)]
                       (letfn [(id [kw] (select-id root kw))]
-                        (swap! (id :vars-fqn-listing-cb-atom) 
-                               (fn [_] (config (id :vars-fqn-listing-cb-action) :selected?))))))))
+                        (swap! (id :vars-fqn-listing-cb-atom)
+                               (fn [_] (not (config (id :vars-fqn-listing-cb-action) :selected?)))))))))
 
 (add-app-action :vars-unmap-btn-action
   (action :name "Un-Map"
@@ -470,6 +469,7 @@
     (config! (id :browse-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
     (config! (id :inspect-btn) :enabled? false)
+    (config! (id :vars-fqn-listing-cb-action) :selected? false)
     (listen (id :inspect-btn)
       :action (fn [event] (swap! (id :inspect-btn-atom) not)))
     (config! (id :ns-require-btn) :action (id :ns-require-btn-action))
@@ -649,11 +649,12 @@
          (id :vars-filter-tf)
          vars-search-doc-also-cb-atom
          vars-lb-refresh-atom
-         group-vars-by-object-type-atom])
+         group-vars-by-object-type-atom
+         (id :vars-fqn-listing-cb-atom)])
       (b/transform (fn [o]
         (let [ns-list (selection (id :ns-lb) {:multi? true})
               n (and ns-list (map #(find-ns (symbol %)) ns-list))
-              always-display-fqn? false  ; tbd: make this user-configurable
+              always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)  ; tbd: make this user-configurable
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (if n
