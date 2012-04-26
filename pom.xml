@@ -10,7 +10,7 @@
   <scm>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>7df67b40cf064ab3ff2386270900492cde14ae37</tag>
+    <tag>6d021e9cd49fc93b657e3632d18d8ceee3b54e70</tag>
     <url>https://github.com/franks42/clj-ns-browser</url>
   </scm>
   <build>
@@ -42,6 +42,12 @@
       <groupId>lein-marginalia</groupId>
       <artifactId>lein-marginalia</artifactId>
       <version>0.6.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>franks42</groupId>
+      <artifactId>debug-repl</artifactId>
+      <version>0.3.1-FS</version>
       <scope>test</scope>
     </dependency>
     <dependency>
