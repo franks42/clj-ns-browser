@@ -20,7 +20,137 @@
         [clj-info.doc2html :only [doc2html]]
         [alex-and-georges.debug-repl]))
 
-(declare fqname)
+
+;; clojure.core/special-symbol? tests for inclusion in:
+;; clj-ns-browser.utils=> (sort (keys (. clojure.lang.Compiler specials)))
+;; (& . case* catch def deftype* do finally fn* if let* letfn* loop* monitor-enter
+;; monitor-exit new quote recur reify* set! throw try var clojure.core/import*)
+;;
+;; following list of special forms is from clojure website specs:
+;; [. def do fn if let loop monitor-enter monitor-exit new quote recur set! throw try var]
+;; some special forms seem to be implemented as macros with help of special-symbols (?)
+
+
+(def special-forms
+  "List of name-strings for those special-form that are not vars also."
+  (sort (map name (keys (. clojure.lang.Compiler specials)))))
+
+
+;; resolve-fqname and fqname are the two basic resolution functions
+;; to find objects for names and names for objects, respectively.
+
+(defn resolve-fqname
+  "Returns the resolved var/class/namespace for the (fully qualified) name a-fqn (string, symbol, var, class or namespace). Name can be a local name mapped in namespace a-ns.
+  Returns nil if name cannot be resolved or if it's a non-var special-form.
+  Name is resolved within namespace a-ns (string, symbol or ns), which defaults to *ns*.
+  "
+  ([a-fqn] (resolve-fqname *ns* a-fqn))
+  ([a-ns a-fqn]
+    (when-let [ns-0 (or (and (= (type a-ns) clojure.lang.Namespace) a-ns)
+                        (find-ns (symbol a-ns)))]
+      (let [t (type a-fqn)]
+        (if (or (var? a-fqn)(= (type a-fqn) clojure.lang.Namespace)(instance? java.lang.Class a-fqn))
+          a-fqn
+          (when-let [fqn-str (or (and (string? a-fqn) (not= a-fqn "") a-fqn)
+                                 (and (symbol? a-fqn) (str a-fqn)))]
+            (let [fqn (if (= fqn-str "clojure.core//") "/" fqn-str)] ;; special corner case :-(
+              (if-let [ns (find-ns (symbol fqn))]
+                ns
+                (when-let [var-or-class (try (resolve ns-0 (symbol fqn))(catch Exception e))]
+                  var-or-class)))))))))
+
+
+(defn fqname
+  "Returns the fully qualified name-string of a var, class or ns
+  for n within an (optional) namespace, which may or
+  may not be used for the resolution, depending whether n is already FQ'ed.
+  Input n: string, (quoted-)symbol, var, or actual class or ns.
+        ns: (optional) namespace as ns, symbol or string - default to *ns*.
+  Output: FQName as string or nil."
+  ([n] (cond
+          (keyword? n) (if-let [nsp (namespace n)]
+                         (str nsp "/" (name n))
+                         (name n))
+          :else (fqname *ns* n)))
+  ([ns n]
+    (let [n-str (str n)
+          n-sym (symbol n-str)]
+      (if (= n-str "clojure.core//")
+        "clojure.core//"  ;; special corner case :-(
+        (if (some #(= % n-str) special-forms) n-str
+          (if-let [n-ns (find-ns n-sym)]
+            (str n-ns)
+            (if-let [n-class (= (type n) java.lang.Class)]
+              (.getName n)
+              (when-let [ns-ns (if (= (type ns) clojure.lang.Namespace)
+                                 ns
+                                 (find-ns (symbol (str ns))))]
+                (if-let [var-n (when (var? n) (str (.ns n) "/" (.sym n)))]
+                  var-n
+                  (let [n-sym (symbol (str n))]
+                    (when-let [v-n (try (ns-resolve ns-ns n-sym)(catch Exception e))]
+                      (if (var? v-n)
+                        (str (.ns v-n) "/" (.sym v-n))
+                        (.getName v-n)))))))))))))
+
+
+(defn ns-name-class-str
+  "Given a FQN, return the namespace and name in a list as separate strings.
+  clojure.core/map => [\"clojure.core\" \"map\"]
+  clojure.core => [\"clojure.core\" nil]
+  clojure.lang.Var => [nil \"clojure.lang.Var\"]
+  any error returns nil."
+  [fqn]
+  (when-let [fqn-sym (and fqn (= (type fqn) java.lang.String) (symbol fqn))]
+    (let [n-str (name fqn-sym)
+          ns-str (namespace fqn-sym)]
+      (if ns-str
+        [ns-str n-str]
+        (if (find-ns (symbol n-str))
+          [n-str nil]
+          [nil n-str])))))
+
+
+;; "clojure.core//" appears to be a special case not handled well by
+;; the function symbol.
+(defn better-symbol [fqn]
+  (if (= fqn "clojure.core//")
+    (symbol "clojure.core" "/")
+    (symbol fqn)))
+
+
+;; basic type-predicates
+;; note that we already have char? class? coll? decimal? empty? fn? ifn? future? keyword? list?
+;; map? nil? number? seq? sequential? set? special-symbol? string? symbol? var? vector?
+
+(defn special-form?
+  "Predicate that returns true if given name n (string or symbol) is a special-form and false otherwise.
+  Note that some special forms are vars/macros, and some are special-symbols.
+  All the none-vars are tested by clojure.core/special-symbol?"
+  [n]
+  (if (and (var? n) (:special-form (meta n)))
+    true
+    (when-let [n-str (and n (str n))]
+      (or (some #(= % n-str) special-forms)
+        (when-let [v (resolve-fqname n-str)]
+          (and (var? v) (:special-form (meta v))))))))
+
+
+(defn macro?
+  "Predicate that returns true when var v is a macro, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (macro? (resolve-fqname n))"
+  [v]
+  (and (var? v) (:macro (meta v))))
+
+
+(defn namespace?
+  "Predicate that returns true when n refers to a namespace, and false otherwise.
+  Note that input is a name referring to a namespace - if you want to input a name-string or -symbol, use:
+  (namespace? (resolve-fqname n))"
+  [maybe-ns]
+  (isa? clojure.lang.Namespace (type maybe-ns)))
+
 
 ;; Two convenience function for clojure.tools.trace
 ;; that should ideally be part of that library
@@ -85,15 +215,16 @@
 	  input-string)))))
 
 
-;;
+;; functions to collect different (filtered/sub-) lists of vars, classes, special-forms, etc.
 
-(def special-forms
-  (sort (map name '[def if do let quote var fn loop recur throw try monitor-enter monitor-exit . new set!])))
+(defn ns-special-forms 
+  "Collects the special form string-symbol map from both the special-symbol list and the special-form vars in clojure.core.
+  Returns a map that has same format as ns-map, ns-publics and friends."
+  [& no-op]
+  (let [str-list (concat special-forms (map name (filter special-form? (keys (ns-map *ns*)))))
+        sym-list (map symbol str-list)]
+    (zipmap str-list sym-list)))
 
-(defn special-form? [n-str] (some #(= % n-str) special-forms))
-
-(defn ns-special-forms [& no-op]
-  '{"def" def "if" if "do" do "let" let "quote" quote "var" var "fn" fn "loop" loop "recur" recur "throw" throw "try" try "monitor-enter" monitor-enter "monitor-exit" monitor-exit "." . "new" new "set!" set!})
 
 (defn symbols-of-ns-coll [ns-action f ns-coll display-fqn? search-doc-strings?]
   (when-not (or (nil? ns-coll) (empty? ns-coll) (nil? (first ns-coll)))
@@ -141,6 +272,7 @@
              (mapcat (fn [a-ns] (map g (f a-ns)))
                      ns-coll))))))
 
+
 (defn filter-key [keyfn pred amap]
   (loop [ret {} es (seq amap)]
     (if es
@@ -148,6 +280,7 @@
         (recur (assoc ret (key (first es)) (val (first es))) (next es))
         (recur ret (next es)))
       ret)))
+
 
 (defn ns-privates
   "Returns a map of the private (i.e. not public) intern mappings for
@@ -159,6 +292,7 @@
                            (= ns (.ns v))
                            (not (.isPublic v))))
                 (ns-map ns))))
+
 
 (defn all-ns-classpath
   "Returns a sorted set of the name-strings of all namespaces found on class-path."
@@ -179,6 +313,7 @@
   (apply sorted-set
     (clojure.set/difference (all-ns-classpath) (all-ns-loaded))))
 
+
 (defn all-ns-loaded-unloaded
   "Returns a sorted set of the name-strings of all unloaded namespaces."
   []
@@ -190,68 +325,6 @@
   "Returns whether a ns is on the classpath but not loaded/required (yet)."
   [ns]
   (let [nss (str ns)] (get (all-ns-unloaded) nss)))
-
-
-(defn fqname
-  "Returns the fully qualified name-string of a var, class or ns
-  for a name n within an (optional) namespace, which may or
-  may not be used for the resolution, depending whether n is already FQ'ed.
-  Input n: string, (quoted-)symbol, var, or actual class or ns.
-        ns: (optional) namespace as ns, symbol or string - default *ns*.
-  Output: FQName as string or nil."
-  ([n] (cond
-          (keyword? n) (if-let [nsp (namespace n)]
-                         (str nsp "/" (name n))
-                         (name n))
-          :else (fqname *ns* n)))
-  ([ns n]
-    (let [n-str (str n)
-          n-sym (symbol n-str)]
-      (if (= n-str "clojure.core//")
-        "clojure.core//"  ;; special corner case :-(
-        (if (some #(= % n-str) special-forms) n-str
-          (if-let [n-ns (find-ns n-sym)]
-            (str n-ns)
-            (if-let [n-class (= (type n) java.lang.Class)]
-              (.getName n)
-              (when-let [ns-ns (if (= (type ns) clojure.lang.Namespace)
-                                 ns
-                                 (find-ns (symbol (str ns))))]
-                (if-let [var-n (when (var? n) (str (.ns n) "/" (.sym n)))]
-                  var-n
-                  (let [n-sym (symbol (str n))]
-                    (when-let [v-n (try (ns-resolve ns-ns n-sym)(catch Exception e))]
-                      (if (var? v-n)
-                        (str (.ns v-n) "/" (.sym v-n))
-                        (.getName v-n)))))))))))))
-
-
-(defn ns-name-class-str
-  "Given a FQN, return the namespace and name in a list as separate strings.
-  clojure.core/map => [\"clojure.core\" \"map\"]
-  clojure.core => [\"clojure.core\" nil]
-  clojure.lang.Var => [nil \"clojure.lang.Var\"]
-  any error returns nil."
-  [fqn]
-  (when-let [fqn-sym (and fqn (= (type fqn) java.lang.String) (symbol fqn))]
-    (let [n-str (name fqn-sym)
-          ns-str (namespace fqn-sym)]
-      (if ns-str
-        [ns-str n-str]
-        (if (find-ns (symbol n-str))
-          [n-str nil]
-          [nil n-str])))))
-
-
-(defn resolve-fqname
-  "Returns the resolved fully qualified name fqn (string) or nil."
-  [a-fqn]
-  (when (and (string? a-fqn) (not= a-fqn ""))
-    (let [fqn (if (= a-fqn "clojure.core//") "/" a-fqn)] ;; special corner case :-(
-      (if-let [ns (find-ns (symbol fqn))]
-        ns
-        (when-let [var-or-class (try (resolve *ns* (symbol fqn))(catch Exception e))]
-          var-or-class)))))
 
 
 (defn pprint-str
@@ -278,9 +351,6 @@
 ;; (val-kv-filter {} {:a true :b false :c true})
 ;; (val-kv-filter {:a "fn-a" :b "fn-b" :c "fn-c" :d "fn-d"} {})
 ;; (val-kv-filter {} {})
-
-
-(defn no-nils [coll] (filter #(not (nil? %)) coll))
 
 
 ;; The clean-* functions are probably best removed after changing
@@ -349,7 +419,7 @@ clojuredocs for fqn"
         (str "Sorry, not a fully qualified clojure name: " fqn)))))
 
 
-(def ^:dynamic *max-value-display-size* 500)
+(def ^:dynamic *max-value-display-size* 2500)
 
 ;; TBD: Problems with these, probably because of problems with
 ;; cd-client.core behavior:
@@ -377,14 +447,6 @@ clojuredocs for fqn"
 ;; var?
 
 ;; (in-ns 'clj-ns-browser.utils)
-
-
-;; "clojure.core//" appears to be a special case not handled well by
-;; the function symbol.
-(defn better-symbol [fqn]
-  (if (= fqn "clojure.core//")
-    (symbol "clojure.core" "/")
-    (symbol fqn)))
 
 
 (defn eval-sym [sym]
