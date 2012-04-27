@@ -441,8 +441,7 @@
             ""
             (str (str/trim-newline s) "\n"))
           (str "Sorry no " (name info-type) " available from clojuredoc for: "
-               fqn))
-        (str "Sorry, not a fully qualified clojure name: " fqn)))))
+               fqn))))))
 
 
 (def ^:dynamic *max-value-display-size* 2500)

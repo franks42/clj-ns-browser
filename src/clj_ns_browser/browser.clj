@@ -323,14 +323,25 @@
 (add-app-action :zoom-in-action
   (action :name "Zoom in"
           :key  "menu U"
-          :handler (fn [e] (let [id (partial select-id (to-root e))](invoke-later (font-size+ (id :doc-ta)))))))
+          :handler (fn [e] (let [id (partial select-id (to-root e))]
+            (invoke-later (font-size+ (id :doc-ta))
+                          (font-size+ (id :doc-tf))
+                          (font-size+ (id :ns-lb))
+                          (font-size+ (id :vars-lb)))))))
+          
 (add-app-action :zoom-out-action
   (action :name "Zoom out"
           :key  "menu D"
-          :handler (fn [e] (let [id (partial select-id (to-root e))](invoke-later (font-size- (id :doc-ta)))))))
+          :handler (fn [e] (let [id (partial select-id (to-root e))]
+            (invoke-later (font-size- (id :doc-ta))
+                          (font-size- (id :doc-tf))
+                          (font-size- (id :ns-lb))
+                          (font-size- (id :vars-lb)))))))
+          
 (add-app-action :bring-all-windows-to-front-action
   (action :name "Bring All to Front"
           :handler (fn [e] (refresh-clj-ns-browser))))
+          
 (add-app-action :cycle-through-windows-action
   (action :name "Cycle Through Windows"
           :key  "menu M"
@@ -346,10 +357,12 @@
                   (set-clip! fqn))
                 (if-let [fqn (config (id :doc-tf) :text)]
                   (set-clip! fqn)))))))
+                  
 (add-app-action :fqn-from-clipboard-action
   (action :name "Paste - FQN from clipboard"
           :key  "menu V"
           :handler (fn [e] (if-let [fqn (get-clip)] (invoke-soon (browser-with-fqn *ns* fqn (to-root e)))))))
+          
 (add-app-action :fqn-from-selection-action
   (action :name "FQN from selection"
           :key  "menu F"
@@ -739,7 +752,7 @@
     ;; new render-doc-text in doc-ta
     (b/bind
       ; As the text of the fqn text field changes ...
-      (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
+      (apply b/funnel [(id :doc-tf) (id :doc-cbx) vars-lb-refresh-atom])
       (b/filter (fn [[doc-tf doc-cbx]]
                   (not (or (nil? doc-tf)  (= "" doc-tf)
                            (nil? doc-cbx) (= "" doc-cbx)))))
