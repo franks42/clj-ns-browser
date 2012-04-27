@@ -771,6 +771,7 @@
                 (= type-str "Special Form") :lightsalmon  ;; function
                 (= type-str "Protocol") :lightblue  ;; function
                 (= type-str "Namespace") :blanchedalmond  ;; function
+                (= type-str "Class") :wheat  ;; function
                 (= type-str "java.lang.Class") :wheat  ;; function
                 true :white))
             :white))))

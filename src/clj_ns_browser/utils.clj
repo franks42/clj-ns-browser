@@ -10,6 +10,7 @@
   (:require [clojure.set]
             [cd-client.core]
             [clojure.java.shell]
+            [clojure.java.io]
             [clojure.string :as str]
             [clojure.tools.namespace]
             [clojure.tools.trace])
@@ -40,24 +41,24 @@
 ;; to find objects for names and names for objects, respectively.
 
 (defn resolve-fqname
-  "Returns the resolved var/class/namespace for the (fully qualified) name a-fqn (string, symbol, var, class or namespace). Name can be a local name mapped in namespace a-ns.
+  "Returns the resolved var/class/namespace for the (fully qualified) name a-fqn 
+  (string, symbol, var, class or namespace). Name can be a local name mapped in namespace a-ns.
   Returns nil if name cannot be resolved or if it's a non-var special-form.
   Name is resolved within namespace a-ns (string, symbol or ns), which defaults to *ns*.
   "
   ([a-fqn] (resolve-fqname *ns* a-fqn))
   ([a-ns a-fqn]
-    (when-let [ns-0 (or (and (= (type a-ns) clojure.lang.Namespace) a-ns)
-                        (find-ns (symbol a-ns)))]
-      (let [t (type a-fqn)]
-        (if (or (var? a-fqn)(= (type a-fqn) clojure.lang.Namespace)(instance? java.lang.Class a-fqn))
-          a-fqn
-          (when-let [fqn-str (or (and (string? a-fqn) (not= a-fqn "") a-fqn)
-                                 (and (symbol? a-fqn) (str a-fqn)))]
-            (let [fqn (if (= fqn-str "clojure.core//") "/" fqn-str)] ;; special corner case :-(
-              (if-let [ns (find-ns (symbol fqn))]
-                ns
-                (when-let [var-or-class (try (resolve ns-0 (symbol fqn))(catch Exception e))]
-                  var-or-class)))))))))
+    (if (or (var? a-fqn)(= (type a-fqn) clojure.lang.Namespace)(instance? java.lang.Class a-fqn))
+      a-fqn
+      (when-let [ns-0 (or (and (= (type a-ns) clojure.lang.Namespace) a-ns)
+                          (find-ns (symbol a-ns)))]
+        (when-let [fqn-str (or (and (string? a-fqn) (not= a-fqn "") a-fqn)
+                               (and (symbol? a-fqn) (str a-fqn)))]
+          (let [fqn (if (= fqn-str "clojure.core//") "/" fqn-str)] ;; special corner case :-(
+            (if-let [ns (find-ns (symbol fqn))]
+              ns
+              (when-let [var-or-class (try (ns-resolve ns-0 (symbol fqn))(catch Exception e))]
+                var-or-class))))))))
 
 
 (defn fqname
@@ -72,7 +73,7 @@
                          (str nsp "/" (name n))
                          (name n))
           :else (fqname *ns* n)))
-  ([ns n]
+  ([a-ns n]
     (let [n-str (str n)
           n-sym (symbol n-str)]
       (if (= n-str "clojure.core//")
@@ -80,11 +81,11 @@
         (if (some #(= % n-str) special-forms) n-str
           (if-let [n-ns (find-ns n-sym)]
             (str n-ns)
-            (if-let [n-class (= (type n) java.lang.Class)]
+            (if (class? n)
               (.getName n)
-              (when-let [ns-ns (if (= (type ns) clojure.lang.Namespace)
-                                 ns
-                                 (find-ns (symbol (str ns))))]
+              (when-let [ns-ns (if (= (type a-ns) clojure.lang.Namespace)
+                                 a-ns
+                                 (find-ns (symbol (str a-ns))))]
                 (if-let [var-n (when (var? n) (str (.ns n) "/" (.sym n)))]
                   var-n
                   (let [n-sym (symbol (str n))]
@@ -94,6 +95,18 @@
                         (.getName v-n)))))))))))))
 
 
+(defn fqname-symbol
+  "Returns the fully qualified name-symbol of a var, class or ns
+  for n within an (optional) namespace, which may or
+  may not be used for the resolution, depending whether n is already FQ'ed.
+  Input n: string, (quoted-)symbol, var, or actual class or ns.
+        ns: (optional) namespace as ns, symbol or string - default to *ns*.
+  Output: FQName as symbol or nil.
+  See also: fqname"
+  ([n] (when-let [f (fqname n)] (symbol f)))
+  ([a-ns n](when-let [f (fqname a-ns n)] (symbol f))))
+
+
 (defn ns-name-class-str
   "Given a FQN, return the namespace and name in a list as separate strings.
   clojure.core/map => [\"clojure.core\" \"map\"]
@@ -101,7 +114,7 @@
   clojure.lang.Var => [nil \"clojure.lang.Var\"]
   any error returns nil."
   [fqn]
-  (when-let [fqn-sym (and fqn (= (type fqn) java.lang.String) (symbol fqn))]
+  (when-let [fqn-sym (and fqn (string? fqn) (symbol fqn))]
     (let [n-str (name fqn-sym)
           ns-str (namespace fqn-sym)]
       (if ns-str
@@ -142,6 +155,18 @@
   (macro? (resolve-fqname n))"
   [v]
   (and (var? v) (:macro (meta v))))
+
+
+(defn defn?
+  "Predicate that returns true when var v is a function with a specified arglist, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (function? (resolve-fqname n))"
+  [v]
+  (if-let [m (and (var? v) (meta v))]
+    (if (and (not (or (:macro m)(:special-form m))) (fn? @v) (:arglists m))
+      true
+      false)
+    false))
 
 
 (defn namespace?
@@ -218,7 +243,8 @@
 ;; functions to collect different (filtered/sub-) lists of vars, classes, special-forms, etc.
 
 (defn ns-special-forms 
-  "Collects the special form string-symbol map from both the special-symbol list and the special-form vars in clojure.core.
+  "Collects the special form string-symbol map from both the special-symbol list 
+  and the special-form vars in clojure.core.
   Returns a map that has same format as ns-map, ns-publics and friends."
   [& no-op]
   (let [str-list (concat special-forms (map name (filter special-form? (keys (ns-map *ns*)))))
@@ -330,7 +356,7 @@
 (defn pprint-str
   "Return string with pprint of v, and limit output to prevent blowup."
   ([v & kvs]
-    (with-out-str (binding [*print-length* 6 *print-level* 6] (pprint v)))))
+    (with-out-str (binding [*print-length* 32 *print-level* 6] (pprint v)))))
 
 
 (defn val-kv-filter
@@ -400,7 +426,7 @@
 
 (defn render-clojuredocs-text
   "Obtain and return examples, see alsos, or comments as a string from
-clojuredocs for fqn"
+  clojuredocs for fqn"
   [real-fqn info-type is-ns?]
   (if is-ns?
     (str "Select individual symbols in the namespace to see " (name info-type))
@@ -475,7 +501,7 @@ clojuredocs for fqn"
   [fqn is-ns?]
   (if is-ns?
     (str fqn " is a namespace")
-    (let [sym (better-symbol fqn)
+    (let [sym (fqname-symbol fqn)
           [status val] (eval-sym sym)
           c (class val)]
       (case status
@@ -527,12 +553,19 @@ clojuredocs for fqn"
                      "\n\nSource:\n"
                      (render-doc-text fqn "Source"))
                 (str (render-doc-text fqn "Doc")
-                     "\n\n\nEXAMPLES\n"
-                     (render-doc-text fqn "Examples")
-                     "\nSEE ALSO\n"
-                     (render-doc-text fqn "See alsos")
-                     "\nCOMMENTS\n"
-                     (render-doc-text fqn "Comments")
+                     "\n\n"
+                     (let [s (render-doc-text fqn "Examples")]
+                       (if (or (nil? s)(= s ""))
+                         ""
+                         (str "\nEXAMPLES\n" s)))
+                     (let [s (render-doc-text fqn "See alsos")]
+                       (if (or (nil? s)(= s ""))
+                         ""
+                         (str "\nSEE ALSO\n" s)))
+                     (let [s (render-doc-text fqn "Comments")]
+                       (if (or (nil? s)(= s ""))
+                         ""
+                         (str "\nCOMMENTS\n" s)))
                      "\n"
                      (render-doc-text fqn "Value")
                      "\nSOURCE\n"
@@ -550,7 +583,7 @@ clojuredocs for fqn"
         "Source"
         (if is-ns?
           (str "Select individual symbols in the namespace to see source")
-          (if-let [source-str (try (clojure.repl/source-fn (better-symbol fqn))
+          (if-let [source-str (try (clojure.repl/source-fn (fqname-symbol fqn))
                                    (catch Exception e))]
             source-str
             (str "Sorry - no source code available for " fqn)))
@@ -574,21 +607,20 @@ clojuredocs for fqn"
   "Returns the path to the source file for fqn,
   or nil if none applies."
   [fqn]
-  (let [fqn-sym (better-symbol fqn)]
-    (when-let [v (and (namespace fqn-sym) (find-ns (symbol (namespace fqn-sym))) (find-var fqn-sym))]
-      (when-let [m (meta v)]
-        (when-let [f (:file m)]
-          (if (= (first f) \/)
-            m ;; absolute path is good
-            (let [p (str "src/" f)] ;; assume we start from project-dir
-              ;; check for file existence of p
-              (when (zero? (:exit (clojure.java.shell/sh "bash" "-c" (str "[ -f " p " ]"))))
-                (assoc m :file p)))))))))
+  (when-let [v (resolve-fqname fqn)]
+    (when-let [m (meta v)]
+      (when-let [f (:file m)]
+        (if (= (first f) \/)
+          m ;; absolute path is good
+          (let [p (str "src/" f)] ;; assume we start from project-dir
+            ;; check for file existence of p
+            (when (.exists (clojure.java.io/as-file p))
+              (assoc m :file p))))))))
 
 
 (defn unresolve
   "Given a var, return a sequence of all symbols that resolve to the
-var from the current namespace *ns*."
+  var from the current namespace *ns*."
   [var]
   (when-not (instance? clojure.lang.Var var)
     (throw (Exception. (format "unresolve: first arg must be Var"))))
@@ -616,17 +648,17 @@ var from the current namespace *ns*."
 
 (defn apropos
   "Given a regular expression or stringable thing, calculate a
-sequence of all symbols in all currently-loaded namespaces such that
-it matches the str-or-pattern, with at most one such symbol per Var.
-The sequence returned contains symbols that map to those Vars, and are
-the shortest symbols that map to the Var, when qualified with the
-namespace name or alias, if that qualification is necessary to name
-the Var.  Note that it is possible the symbol returned does not match
-the str-or-pattern itself, e.g. if the symbol-to-var mapping was
-created with :rename.
-
-Searches through all non-Java symbols in the current namespace, but
-only public symbols of other namespaces."
+  sequence of all symbols in all currently-loaded namespaces such that
+  it matches the str-or-pattern, with at most one such symbol per Var.
+  The sequence returned contains symbols that map to those Vars, and are
+  the shortest symbols that map to the Var, when qualified with the
+  namespace name or alias, if that qualification is necessary to name
+  the Var.  Note that it is possible the symbol returned does not match
+  the str-or-pattern itself, e.g. if the symbol-to-var mapping was
+  created with :rename.
+  
+  Searches through all non-Java symbols in the current namespace, but
+  only public symbols of other namespaces."
   [str-or-pattern & opts]
   (let [matches? (if (instance? java.util.regex.Pattern str-or-pattern)
                    #(re-find str-or-pattern (str %))
@@ -644,7 +676,7 @@ only public symbols of other namespaces."
 
 (defn apro
   "Shorter-name version of apropos that also sorts and pretty-prints
-the results."
+  the results."
   [str-or-pattern & opts]
   (pprint (sort (apply apropos str-or-pattern opts))))
 
