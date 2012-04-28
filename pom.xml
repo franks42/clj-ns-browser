@@ -10,7 +10,7 @@
   <scm>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>ddf521ebe15e961268d0a3ccdff67939c939aa12</tag>
+    <tag>99c560a55efd9b29933461b19fc0c454463c6154</tag>
     <url>https://github.com/franks42/clj-ns-browser</url>
   </scm>
   <build>
