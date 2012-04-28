@@ -828,11 +828,8 @@
                      (if (get #{"Value" "All"} doc-cbx-sel) fqn false)))
       (b/transform (fn [fqn]
         (when fqn
-          (let [sym (better-symbol fqn)
-                [status val] (eval-sym sym)]
-            (when (and (= status :eval-ok)
-                       (coll? val))
-              true)))))
+          (when-let [val (resolve-fqname fqn)]
+            (and (var? val)(coll? @val))))))
       (b/notify-soon)
       (b/property (id :inspect-btn) :enabled?))
     ;;
@@ -897,13 +894,11 @@
       (id :inspect-btn-atom)
       (b/transform (fn [& o]
         (when-let [fqn (config (id :doc-tf) :text)]
-          (let [sym (better-symbol fqn)
-                [status val] (eval-sym sym)]
-            (when (and (= status :eval-ok)
-                       (coll? val))
+          (when-let [val (resolve-fqname fqn)]
+            (when (and (var? val)(coll? @val))
               (future
                 (clj-ns-browser.inspector/inspect-tree
-                 val (str "Inspector for value of " fqn)))))))))
+                 @val (str "Inspector for value of " fqn)))))))))
     ;;
     )) ; end of bind-all
 

@@ -157,6 +157,38 @@
   (and (var? v) (:macro (meta v))))
 
 
+(defn atom?
+  "Predicate that returns true when var v refers to a atom, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (atom? (resolve-fqname n))"
+  [v]
+  (isa? clojure.lang.Atom (type v)))
+
+
+(defn multimethod?
+  "Predicate that returns true when var v refers to a multi-method, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (multimethod? (resolve-fqname n))"
+  [v]
+  (isa? clojure.lang.MultiFn (type v)))
+
+
+(defn protocol?
+  "Predicate that returns true when var v refers to a protocol, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (protocol? (resolve-fqname n))"
+  [v]
+  (and (var? v) (isa? clojure.lang.PersistentArrayMap (type @v)) (:on-interface @v) true))
+
+
+(defn protocol-fn?
+  "Predicate that returns true when var v refers to a protocol function, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (protocol-fn? (resolve-fqname n))"
+  [v]
+  (if (and (var? v) (:protocol (meta v)) true) true false))
+
+
 (defn defn?
   "Predicate that returns true when var v is a function with a specified arglist, and false otherwise.
   Note that input is a var - if you want to input a name-string or -symbol, use:
@@ -193,8 +225,8 @@
   ([ns s]
      (var-traced? (ns-resolve ns s)))
   ([v]
-     (let [v (if (var? v) v (resolve v))]
-       (not (nil? ((meta v) ::clojure.tools.trace/traced))))))
+     (let [vv (if (var? v) v (resolve v))]
+       (not (nil? ((meta vv) ::clojure.tools.trace/traced))))))
 
 
 ;; should move to clj-info
@@ -455,9 +487,6 @@
 ;; clojure.core/-
 ;; clojure.core/*
 
-;; TBD: How to modify eval-sym so it can evaluate the values of
-;; private symbols?
-
 ;; TBD: What to show for atoms, refs?  It might be useful some day to
 ;; "unwrap" and show the value inside, or at least have an easy way in
 ;; the GUI to do so.
@@ -474,70 +503,69 @@
 ;; (in-ns 'clj-ns-browser.utils)
 
 
-(defn eval-sym [sym]
-  (if (special-symbol? sym)
-    [:special-symbol nil]
-    (try
-      [:eval-ok (eval sym)]
-      (catch Exception e
-        (let [msg (.getMessage e)]
-          (cond
-           (re-find #"java\.lang\.RuntimeException: Can't take value of a macro:" msg)
-           [:macro nil]
-           (re-find #"java\.lang\.IllegalStateException: var: .* is not public" msg)
-           ;; This doesn't work.
-           ;;[:eval-ok (deref (var sym))]
-           [:private nil]
-           :else [:exception e]))))))
-
-
 (defn render-meta
-  [fqn is-ns?]
-  (let [m (meta fqn)]))
+  "Returns a pprint'ed string of the fqn's object's meta-data map or nil if none."
+  [fqn]
+  (when-let [v (resolve-fqname fqn)]
+    (when-let [m (meta v)]
+      (pprint-str (meta v)))))
 
 
-(defn render-value
-  [fqn is-ns?]
-  (if is-ns?
-    (str fqn " is a namespace")
-    (let [sym (fqname-symbol fqn)
-          [status val] (eval-sym sym)
-          c (class val)]
-      (case status
-        :macro (str "CLASS N/A\n\n"
-                    "VALUE <macro>\n")
-        :private (str "CLASS <unknown>\n\n"
-                      "VALUE <private>\n")
-        :special-symbol (str "CLASS N/A\n\n"
-                             "VALUE <special-symbol>\n")
-        :exception (str "CLASS <unknown>\n\n"
-                        "VALUE got following exception while attempting eval symbol:\n"
-                        (with-out-str
-                          (binding [*err* *out*]
-                            (clojure.repl/pst val))))
-        :eval-ok
-        (str "CLASS " (if c (print-str c) "<none>") "\n\n"
-             "VALUE "
-             (cond
-              (nil? val) "nil"
-              (fn? val) (str (clojure.repl/demunge (str val))
-                             "   (function, after demunge)")
-              (or (number? val)
-                  (identical? true val)
-                  (identical? false val)
-                  (char? val)
-                  (keyword? val))
-              (str val)
-              (string? val) (if (<= (count val) *max-value-display-size*)
-                              val
-                              (str (subs val 0 *max-value-display-size*)
-                                   (format "   (truncated to %d characters)"
-                                           *max-value-display-size*)))
-              (coll? val) (str
-                           " (any ... or # shown are likely due to truncation for brevity)\n"
-                           (pprint-str val))
-              :else (str val "   (default display using .toString)"))
-             "\n")))))
+(defn clj-types-str 
+  ""
+  [v]
+  (str
+    (when (special-form? v) "<special-form> " )
+    (when (macro? v) "<macro> " )
+    (when (protocol? v) "<protocol> " )
+    (when (protocol-fn? v) "<protocol-fn> " )
+    (when (multimethod? v) "<multimethod> " )
+    (when (defn? v) "<defn> " )
+    (when (fn? v) "<fn> " )
+    (when (ifn? v) "<ifn> " )
+    (when (char? v) "<char> " )
+    (when (namespace? v) "<namespace> " )
+    ;(when (var-traced? v) "<var-traced> " )
+    (when (atom? v) "<atom> " )
+    (when (string? v) "<string> " )
+    (when (symbol? v) "<symbol> " )
+    (when (var? v) "<var> " )
+    (when (class? v) "<class> " )
+    (when (keyword? v) "<keyword> " )
+    (when (coll? v) "<coll> " )
+    (when (list? v) "<list> " )
+    (when (map? v) "<map> " )
+    (when (seq? v) "<seq> " )
+    (when (sequential? v) "<sequential> " )
+    (when (set? v) "<set> " )
+    (when (vector? v) "<vector> " )
+    (when (number? v) "<number> " )
+    (when (decimal? v) "<decimal> " )
+    ))
+
+(defn render-fqn-value
+  ""
+  [fqn]
+  (let [fqn-str (fqname fqn)
+        fqn-sym (fqname-symbol fqn)]
+    (if (special-symbol? fqn-sym)
+      (str "Type:   <Special-Symbol>")
+      (let [fqn-v (resolve-fqname fqn)]
+        (cond
+          (var? fqn-v)
+            (str  "Type:  " (type fqn-v)
+                "\n       " (clj-types-str fqn-v)
+                  \newline
+                 "\n@Type: " (type @fqn-v)
+                 "\n       " (clj-types-str @fqn-v)
+                  \newline
+                 "\nValue: \n" (pprint-str fqn-v))
+                 ;;"\n  @Value: \n" (pprint-str @fqn-v))
+          :else
+            (str "Type:  " (type fqn-v)
+                "\n       " (clj-types-str fqn-v)
+                 "\nValue: \n" (pprint-str fqn-v))
+            )))))
 
 
 (defn render-doc-text
@@ -590,8 +618,8 @@
         "Examples" (render-clojuredocs-text fqn :examples is-ns?)
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
         "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
-        "Value" (render-value fqn is-ns?)
-        "Meta" (render-meta fqn is-ns?)
+        "Value" (render-fqn-value fqn)
+        "Meta" (render-meta fqn)
         (str "Internal error - clj-ns-browser.utils/render-doc-text got unknown doc-opt='" doc-opt "'")))))
 
 
