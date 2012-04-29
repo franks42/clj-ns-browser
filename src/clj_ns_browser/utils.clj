@@ -124,14 +124,6 @@
           [nil n-str])))))
 
 
-;; "clojure.core//" appears to be a special case not handled well by
-;; the function symbol.
-(defn better-symbol [fqn]
-  (if (= fqn "clojure.core//")
-    (symbol "clojure.core" "/")
-    (symbol fqn)))
-
-
 ;; basic type-predicates
 ;; note that we already have char? class? coll? decimal? empty? fn? ifn? future? keyword? list?
 ;; map? nil? number? seq? sequential? set? special-symbol? string? symbol? var? vector?
@@ -169,8 +161,16 @@
   "Predicate that returns true when var v refers to a multi-method, and false otherwise.
   Note that input is a var - if you want to input a name-string or -symbol, use:
   (multimethod? (resolve-fqname n))"
+  [o]
+  (isa? clojure.lang.MultiFn (type o)))
+
+
+(defn var-multimethod?
+  "Predicate that returns true when var v refers to a multi-method, and false otherwise.
+  Note that input is a var - if you want to input a name-string or -symbol, use:
+  (multimethod? (resolve-fqname n))"
   [v]
-  (isa? clojure.lang.MultiFn (type v)))
+  (and (var? v) (multimethod? @v)))
 
 
 (defn protocol?
@@ -352,6 +352,44 @@
                 (ns-map ns))))
 
 
+(defn ns-publics-protocol
+  "Returns a map of the protocols in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(protocol? (val %)) (ns-publics (resolve-fqname a-ns))))
+
+(defn ns-publics-protocol-fn
+  "Returns a map of the protocol-fn's in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(protocol-fn? (val %)) (ns-publics (resolve-fqname a-ns))))
+
+(defn ns-publics-macro
+  "Returns a map of the macros in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(macro? (val %)) (ns-publics (resolve-fqname a-ns))))
+
+(defn ns-publics-defn
+  "Returns a map of the defn's in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(defn? (val %)) (ns-publics (resolve-fqname a-ns))))
+
+(defn ns-publics-var-multimethod
+  "Returns a map of the multimethod's in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(var-multimethod? (val %)) (ns-publics (resolve-fqname a-ns))))
+
+(defn ns-publics-var-traced
+  "Returns a map of the multimethod's in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(var-traced? (val %)) (ns-publics (resolve-fqname a-ns))))
+
+;;
+
 (defn all-ns-classpath
   "Returns a sorted set of the name-strings of all namespaces found on class-path."
   []
@@ -506,7 +544,7 @@
 (defn render-meta
   "Returns a pprint'ed string of the fqn's object's meta-data map or nil if none."
   [fqn]
-  (when-let [v (resolve-fqname fqn)]
+  (when-let [v (if (or (string? fqn)(symbol? fqn)) (resolve-fqname fqn) fqn)]
     (when-let [m (meta v)]
       (pprint-str (meta v)))))
 
@@ -584,24 +622,29 @@
                      (let [s (render-doc-text fqn "Examples")]
                        (if (or (nil? s)(= s ""))
                          ""
-                         (str "\nEXAMPLES\n" s)))
+                         (str "\nEXAMPLES:\n" s)))
                      (let [s (render-doc-text fqn "See alsos")]
                        (if (or (nil? s)(= s ""))
                          ""
-                         (str "\nSEE ALSO\n" s)))
+                         (str "\nSEE ALSO:\n" s)))
                      (let [s (render-doc-text fqn "Comments")]
                        (if (or (nil? s)(= s ""))
                          ""
-                         (str "\nCOMMENTS\n" s)))
+                         (str "\nCOMMENTS:\n" s)))
                      "\n"
                      (render-doc-text fqn "Value")
-                     "\nSOURCE\n"
-                     (render-doc-text fqn "Source")
-                     "\n"
                      (let [s (render-meta fqn)]
                        (if (or (nil? s)(= s ""))
                          ""
-                         (str "\nMETA\n" s)))))
+                         (str "\nMETA:\n" s)))
+                     (let [v (resolve-fqname fqn)]
+                      (if-let [v? (var? v)]
+                       (let [s (render-meta @v)]
+                         (if (or (nil? s)(= s ""))
+                           ""
+                           (str "\n@META:\n" s)))))
+                     "\nSOURCE:\n"
+                     (render-doc-text fqn "Source")))
         "Doc"
         (let [m (if (= fqn "clojure.core//")
                   {:title "clojure.core//   -   Function",
@@ -624,7 +667,13 @@
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
         "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
         "Value" (render-fqn-value fqn)
-        "Meta" (render-meta fqn)
+        "Meta" (let [s (render-meta fqn)]
+                 (str 
+                   (if s (str "META:\n" s) "")
+                     (let [v (resolve-fqname fqn)]
+                       (if-let [s (and (var? v) (render-meta @v))]
+                         (str "\n@META:\n" s)
+                           ""))))
         (str "Internal error - clj-ns-browser.utils/render-doc-text got unknown doc-opt='" doc-opt "'")))))
 
 
