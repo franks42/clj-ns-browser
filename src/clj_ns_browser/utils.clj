@@ -549,22 +549,22 @@
   (let [fqn-str (fqname fqn)
         fqn-sym (fqname-symbol fqn)]
     (if (special-symbol? fqn-sym)
-      (str "Type:   <Special-Symbol>")
+      (str "TYPE:   <Special-Symbol>")
       (let [fqn-v (resolve-fqname fqn)]
         (cond
           (var? fqn-v)
-            (str  "Type:  " (type fqn-v)
+            (str  "TYPE:  " (type fqn-v)
                 "\n       " (clj-types-str fqn-v)
                   \newline
-                 "\n@Type: " (type @fqn-v)
+                 "\n@TYPE: " (type @fqn-v)
                  "\n       " (clj-types-str @fqn-v)
                   \newline
-                 "\nValue: \n" (pprint-str fqn-v))
+                 "\nVALUE: \n" (pprint-str fqn-v))
                  ;;"\n  @Value: \n" (pprint-str @fqn-v))
           :else
-            (str "Type:  " (type fqn-v)
+            (str "TYPE:  " (type fqn-v)
                 "\n       " (clj-types-str fqn-v)
-                 "\nValue: \n" (pprint-str fqn-v))
+                 "\nVALUE: \n" (pprint-str fqn-v))
             )))))
 
 
@@ -596,7 +596,12 @@
                      "\n"
                      (render-doc-text fqn "Value")
                      "\nSOURCE\n"
-                     (render-doc-text fqn "Source")))
+                     (render-doc-text fqn "Source")
+                     "\n"
+                     (let [s (render-meta fqn)]
+                       (if (or (nil? s)(= s ""))
+                         ""
+                         (str "\nMETA\n" s)))))
         "Doc"
         (let [m (if (= fqn "clojure.core//")
                   {:title "clojure.core//   -   Function",

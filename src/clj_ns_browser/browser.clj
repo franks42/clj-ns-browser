@@ -782,6 +782,7 @@
                 (= type-str "Multimethod") :lightgreen  ;; function
                 (= type-str "Protocol Interface/Function") :lightgreen  ;; function
                 (= type-str "Special Form") :lightsalmon  ;; function
+                (= type-str "Special Symbol") :lightsalmon  ;; function
                 (= type-str "Protocol") :lightblue  ;; function
                 (= type-str "Namespace") :blanchedalmond  ;; function
                 (= type-str "Class") :wheat  ;; function
