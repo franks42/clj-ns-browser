@@ -809,8 +809,6 @@
       (b/transform (fn [o] (selection (id :doc-cbx))))
       (b/transform (fn [o]
         (case o
-          ("All" "Doc") (invoke-soon (config! (id :browse-btn) :enabled? true))
-
           ("Examples" "See alsos" "Comments")
           (if-let [fqn (config (id :doc-tf) :text)]
             (future
@@ -819,7 +817,7 @@
                 (invoke-soon
                  (config! (id :browse-btn) :enabled? r)))))
 
-          nil))))  ; do nothing if no match
+          (invoke-soon (config! (id :browse-btn) :enabled? true))))))
     ;;
     (b/bind
       (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
@@ -855,13 +853,11 @@
           (when-let [fqn (config (id :doc-tf) :text)]
             (future
               (case o
-                ("All" "Doc") (bdoc* fqn)
-
                 ("Examples" "See alsos" "Comments")
                 (when-let [url (clojuredocs-url fqn)]
                   (clojure.java.browse/browse-url url))
 
-                nil)))))))  ; do nothing if no match
+                (bdoc* fqn))))))))
     ;;
     ;; edit-btn pressed =>
     ;; if we find a local file (not inside jar), then send to $EDITOR.
