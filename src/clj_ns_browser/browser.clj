@@ -154,6 +154,8 @@
                                          :ns-map-subset ns-interns %1 %2 %3)
                             "map"      #(symbols-of-ns-coll
                                          :ns-map-subset ns-map %1 %2 %3)
+                            "map-deftype"      #(symbols-of-ns-coll
+                                         :ns-map-subset ns-map-deftype %1 %2 %3)
                             "publics"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-publics %1 %2 %3)
                             "interns-macro"  #(symbols-of-ns-coll

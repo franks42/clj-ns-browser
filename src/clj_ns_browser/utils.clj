@@ -22,6 +22,34 @@
         [alex-and-georges.debug-repl]))
 
 
+(defn class-hierarchy-list1
+  ""
+  [c]
+  (if-let [s (.getSuperclass (peek c))]
+    (concat c (class-hierarchy-list1 [s])) c))
+
+(defn class-hierarchy-list
+  ""
+  [c]
+  (class-hierarchy-list1 [c]))
+
+(defn interface-hierachy-tree1
+  ""
+  [i] 
+  (if-let [l (.getInterfaces i)] 
+    (concat [i] (map interface-hierachy-tree1 l))
+    i))
+
+(defn interface-hierachy-tree
+  ""
+  [c]
+  (let [c-l (class-hierarchy-list c)
+           i-l (doall (filter #(not (nil? %))(map #(.getInterfaces %) c-l)))]
+    (let [r (doall (map #(map interface-hierachy-tree1 %) i-l))]
+;;       r)))
+      (into #{} (doall (flatten r))))))
+
+
 ;; clojure.core/special-symbol? tests for inclusion in:
 ;; clj-ns-browser.utils=> (sort (keys (. clojure.lang.Compiler specials)))
 ;; (& . case* catch def deftype* do finally fn* if let* letfn* loop* monitor-enter
@@ -179,6 +207,12 @@
   (protocol? (resolve-fqname n))"
   [v]
   (and (var? v) (isa? clojure.lang.PersistentArrayMap (type @v)) (:on-interface @v) true))
+
+
+(defn deftype?
+  "Predicate that returns true when object o refers to a deftype, and false otherwise."
+  [o]
+  (isa? o clojure.lang.IType))
 
 
 (defn protocol-fn?
@@ -388,6 +422,12 @@
   [a-ns]
   (filter #(var-traced? (val %)) (ns-interns (resolve-fqname a-ns))))
 
+(defn ns-map-deftype
+  "Returns a map of the multimethod's in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(deftype? (val %)) (ns-map (resolve-fqname a-ns))))
+
 ;;
 
 (defn all-ns-classpath
@@ -415,6 +455,16 @@
   []
   (apply sorted-set
     (clojure.set/union (all-ns-unloaded) (all-ns-loaded))))
+
+
+(defn ns-refers-wo-core 
+  "Same as ns-refers, but without the clojure.core contribution."
+  [a-ns]
+  (let [refers (ns-refers a-ns)
+        refers-keys (set (keys refers))
+        core-keys (set (keys (ns-publics (find-ns 'clojure.core))))
+        refers-keys-wo (clojure.set/difference refers-keys core-keys)]
+    (select-keys refers refers-keys-wo)))
 
 
 (defn ns-is-unloaded?
@@ -568,6 +618,7 @@
     (when (string? v) "<string> " )
     (when (symbol? v) "<symbol> " )
     (when (var? v) "<var> " )
+    (when (deftype? v) "<deftype> " )
     (when (class? v) "<class> " )
     (when (keyword? v) "<keyword> " )
     (when (coll? v) "<coll> " )
@@ -599,9 +650,18 @@
                   \newline
                  "\nVALUE: \n" (pprint-str fqn-v))
                  ;;"\n  @Value: \n" (pprint-str @fqn-v))
+          (class? fqn-v)
+            (str "TYPE:  " (type fqn-v)
+                 "\n       " (clj-types-str fqn-v)
+                 "\n\nVALUE: \n" (pprint-str fqn-v)
+                 "\nCLASS-INHERITANCE:\n"
+                 (pprint-str (class-hierarchy-list fqn-v))
+                 "\nINTERFACES:\n"
+                 (pprint-str (interface-hierachy-tree fqn-v))
+              )
           :else
             (str "TYPE:  " (type fqn-v)
-                "\n       " (clj-types-str fqn-v)
+                 "\n       " (clj-types-str fqn-v)
                  "\nVALUE: \n" (pprint-str fqn-v))
             )))))
 
@@ -761,11 +821,4 @@
   [str-or-pattern & opts]
   (pprint (sort (apply apropos str-or-pattern opts))))
 
-(defn ns-refers-wo-core 
-  "Same as ns-refers, but without the clojure.core contribution."
-  [a-ns]
-  (let [refers (ns-refers a-ns)
-        refers-keys (set (keys refers))
-        core-keys (set (keys (ns-publics (find-ns 'clojure.core))))
-        refers-keys-wo (clojure.set/difference refers-keys core-keys)]
-    (select-keys refers refers-keys-wo)))
+
