@@ -352,41 +352,41 @@
                 (ns-map ns))))
 
 
-(defn ns-publics-protocol
+(defn ns-interns-protocol
   "Returns a map of the protocols in the publics mappings for
   the namespace."
   [a-ns]
-  (filter #(protocol? (val %)) (ns-publics (resolve-fqname a-ns))))
+  (filter #(protocol? (val %)) (ns-interns (resolve-fqname a-ns))))
 
-(defn ns-publics-protocol-fn
+(defn ns-interns-protocol-fn
   "Returns a map of the protocol-fn's in the publics mappings for
   the namespace."
   [a-ns]
-  (filter #(protocol-fn? (val %)) (ns-publics (resolve-fqname a-ns))))
+  (filter #(protocol-fn? (val %)) (ns-interns (resolve-fqname a-ns))))
 
-(defn ns-publics-macro
+(defn ns-interns-macro
   "Returns a map of the macros in the publics mappings for
   the namespace."
   [a-ns]
-  (filter #(macro? (val %)) (ns-publics (resolve-fqname a-ns))))
+  (filter #(macro? (val %)) (ns-interns (resolve-fqname a-ns))))
 
-(defn ns-publics-defn
+(defn ns-interns-defn
   "Returns a map of the defn's in the publics mappings for
   the namespace."
   [a-ns]
-  (filter #(defn? (val %)) (ns-publics (resolve-fqname a-ns))))
+  (filter #(defn? (val %)) (ns-interns (resolve-fqname a-ns))))
 
-(defn ns-publics-var-multimethod
+(defn ns-interns-var-multimethod
   "Returns a map of the multimethod's in the publics mappings for
   the namespace."
   [a-ns]
-  (filter #(var-multimethod? (val %)) (ns-publics (resolve-fqname a-ns))))
+  (filter #(var-multimethod? (val %)) (ns-interns (resolve-fqname a-ns))))
 
-(defn ns-publics-var-traced
+(defn ns-interns-var-traced
   "Returns a map of the multimethod's in the publics mappings for
   the namespace."
   [a-ns]
-  (filter #(var-traced? (val %)) (ns-publics (resolve-fqname a-ns))))
+  (filter #(var-traced? (val %)) (ns-interns (resolve-fqname a-ns))))
 
 ;;
 

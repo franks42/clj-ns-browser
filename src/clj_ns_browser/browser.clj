@@ -156,18 +156,18 @@
                                          :ns-map-subset ns-map %1 %2 %3)
                             "publics"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-publics %1 %2 %3)
-                            "publics-macro"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics-macro %1 %2 %3)
-                            "publics-defn"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics-defn %1 %2 %3)
-                            "publics-protocol"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics-protocol %1 %2 %3)
-                            "publics-protocol-fn"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics-protocol-fn %1 %2 %3)
-                            "publics-var-multimethod"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics-var-multimethod %1 %2 %3)
-                            "publics-var-traced"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics-var-traced %1 %2 %3)
+                            "interns-macro"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-macro %1 %2 %3)
+                            "interns-defn"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-defn %1 %2 %3)
+                            "interns-protocol"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-protocol %1 %2 %3)
+                            "interns-protocol-fn"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-protocol-fn %1 %2 %3)
+                            "interns-var-multimethod"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-var-multimethod %1 %2 %3)
+                            "interns-var-traced"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-var-traced %1 %2 %3)
                             "privates" #(symbols-of-ns-coll
                                          :ns-map-subset ns-privates %1 %2 %3)
                             "refers"   #(symbols-of-ns-coll
