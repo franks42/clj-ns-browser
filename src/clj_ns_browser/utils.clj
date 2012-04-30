@@ -215,6 +215,12 @@
   (isa? o clojure.lang.IType))
 
 
+(defn record?
+  "Predicate that returns true when object o refers to a defrecord, and false otherwise."
+  [o]
+  (isa? o clojure.lang.IRecord))
+
+
 (defn protocol-fn?
   "Predicate that returns true when var v refers to a protocol function, and false otherwise.
   Note that input is a var - if you want to input a name-string or -symbol, use:
@@ -619,6 +625,7 @@
     (when (symbol? v) "<symbol> " )
     (when (var? v) "<var> " )
     (when (deftype? v) "<deftype> " )
+    (when (record? v) "<record> " )
     (when (class? v) "<class> " )
     (when (keyword? v) "<keyword> " )
     (when (coll? v) "<coll> " )
