@@ -353,6 +353,16 @@
   (action :name "JIRA..."
           :handler (fn [a] (future (clojure.java.browse/browse-url
             "http://dev.clojure.org/jira/browse/CLJ")))))
+(add-app-action :go-stackoverflow-action 
+  (action :name "Stackoverflow..."
+          :handler (fn [e] 
+            (let [id (partial select-id (to-root e))]
+              (let [fqn (config (id :doc-tf) :text)]
+              (if-let [fqn-name (fqname fqn)]
+                (let [ns-n-class (ns-name-class-str fqn-name)
+                      sname (if (nil? (second ns-n-class)) (first ns-n-class)(second ns-n-class))]
+                  (future (clojure.java.browse/browse-url
+                    (str "http://stackoverflow.com/search?q=clojure+" sname))))))))))
 (add-app-action :go-about-action
   (action :name "About..."
           :handler (fn [a] (invoke-later (alert (str "Clojure Namespace Browser (" clj-ns-browser-version ")" \newline
@@ -1079,7 +1089,7 @@
         (id :manual-refresh-browser-action) auto-refresh-browser-cb :separator (id :bring-all-windows-to-front-action) 
         (id :cycle-through-windows-action)])
 
-      (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-jira-action) (id :go-about-action)])
+      (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-stackoverflow-action) (id :go-jira-action) (id :go-about-action)])
       (config! docs-menu :items [update-clojuredocs :separator
                                  clojuredocs-online-rb clojuredocs-offline-rb
                                  :separator])
