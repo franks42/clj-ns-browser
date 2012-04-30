@@ -13,6 +13,7 @@
             [clojure.java.browse]
             [clojure.java.shell]
             [clojure.java.io]
+            [clojure.pprint]
             [clojure.string :as str]
             [clj-info.doc2map :as d2m]
             [clj-ns-browser.inspector]
@@ -198,6 +199,7 @@
 
 ;; "global" atoms
 
+(def settings-atom (atom {}))
 (def all-ns-loaded-atom (atom nil))
 (def all-ns-unloaded-atom (atom nil))
 (defn ns-loaded [] @all-ns-loaded-atom)
@@ -210,6 +212,29 @@
 (def vars-lb-refresh-atom (atom true))
 
 ;; bind specific fns
+
+(defn clojuredocs-snapshot-filename []
+  (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt"))
+
+(defn clojuredocs-offline-mode! []
+  (let [f (clojuredocs-snapshot-filename)]
+    (if (.exists (clojure.java.io/as-file f))
+      ;; TBD: Consider trying to handle errors while reading the file.
+      (let [s (with-out-str (cd-client.core/set-local-mode! f))]
+        [:ok s])
+      [:snapshot-file-not-found f])))
+
+
+(defn write-settings-if-changed! [maybe-new-partial-settings]
+  (let [maybe-new-settings (merge @settings-atom maybe-new-partial-settings)]
+    ;; Only write settings file if the complete collection of settings
+    ;; has changed.
+    (when (not= @settings-atom maybe-new-settings)
+      ;;(printf "Writing settings file with new partial settings: ")
+      ;;(clojure.pprint/pprint maybe-new-partial-settings)
+      ;;(flush)
+      (write-settings! maybe-new-settings))))
+
 
 ;;(b/transform regx-tf-filter :ns-filter-tf)
 
@@ -545,12 +570,28 @@
 
 
 (defn init-after-bind
-  [root]
+  [root read-and-apply-saved-settings?]
+  (when read-and-apply-saved-settings?
+    (swap! settings-atom
+           (fn [cur-settings settings-read]
+             ;;(printf "read-settings result=")
+             ;;(clojure.pprint/pprint settings-read)
+             ;;(flush)
+             settings-read)
+           (read-settings)))
   (letfn [(id [kw] (select-id root kw))]
     (invoke-soon
-      (selection! (id :ns-cbx) "loaded")
-      (selection! (id :vars-cbx) "publics")
-      (selection! (id :doc-cbx) "Doc"))))
+     (when read-and-apply-saved-settings?
+       (if (:clojuredocs-online @settings-atom)
+         (config! (id :clojuredocs-online-rb) :selected? true)
+         (let [[status msg] (clojuredocs-offline-mode!)]
+           (case status
+             :ok (config! (id :clojuredocs-offline-rb) :selected? true)
+             :snapshot-file-not-found
+             (config! (id :clojuredocs-online-rb) :selected? true)))))
+     (selection! (id :ns-cbx) "loaded")
+     (selection! (id :vars-cbx) "publics")
+     (selection! (id :doc-cbx) "Doc"))))
 
 
 (defn bind-all
@@ -880,21 +921,24 @@
         (id :clojuredocs-online-rb-atom))
       (b/transform (fn [& o]
         (if (config (id :clojuredocs-offline-rb) :selected?)
-          (let [f (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt")]
-            (if (.exists (clojure.java.io/as-file f))
-              (let [s (with-out-str (cd-client.core/set-local-mode! f))]
-                (alert (str "Note: Locally cached ClojureDocs copy will be used" \newline s)))
+          (let [[status msg] (clojuredocs-offline-mode!)]
+            (case status
+              :ok (alert (str "Note: Locally cached ClojureDocs copy will be used"
+                              \newline msg))
+              :snapshot-file-not-found
               (do (alert "No locally cached ClojureDocs repo found - update first")
                   (config! (id :clojuredocs-online-rb) :selected? true))))
-            (let [s (with-out-str (cd-client.core/set-web-mode!))]
-                (alert (str "Note: Online ClojureDocs will be used" \newline s)))))))
+          (let [s (with-out-str (cd-client.core/set-web-mode!))]
+            (alert (str "Note: Online ClojureDocs will be used" \newline s))))
+        (write-settings-if-changed! {:clojuredocs-online
+                                     (config (id :clojuredocs-online-rb) :selected?)}))))
     ;;
     ; update locally cached clojuredocs repo
     (b/bind
       (id :update-clojuredocs-btn-atom)
       (b/transform (fn [& o]
         (future
-          (let [f (str (System/getProperty "user.home") "/.clojuredocs-snapshot.txt")]
+          (let [f (clojuredocs-snapshot-filename)]
             (spit f (slurp
         "https://raw.github.com/jafingerhut/cd-client/develop/snapshots/clojuredocs-snapshot-latest.txt"))
             (invoke-soon (alert (str "Locally cached copy of ClojureDocs updated at:" \newline f))))))))
@@ -1108,7 +1152,7 @@
     (init-menu-before-bind root)
     (init-before-bind root)
     (bind-all root)
-    (init-after-bind root)
+    (init-after-bind root (empty? @browser-root-frms))
     (swap! browser-root-frms (fn [a] (conj @browser-root-frms root)))
     (config! root :title (str "Clojure Namespace Browser - " (.indexOf @browser-root-frms root)))
     (config! root :id (keyword (str "browser-frame-" (.indexOf @browser-root-frms root))))

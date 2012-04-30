@@ -829,3 +829,34 @@
   (pprint (sort (apply apropos str-or-pattern opts))))
 
 
+(defn read-safely
+  "Read Clojure data from the source specified by the args (passed on
+to clojure.java.io/reader) with *read-eval* false, to avoid executing
+any code."
+  [x & opts]
+  (with-open [r (java.io.PushbackReader. (apply clojure.java.io/reader x opts))]
+    (binding [*read-eval* false]
+      (read r))))
+
+
+(def default-settings
+  {:clojuredocs-online true})
+
+(defn settings-filename []
+  (str (System/getProperty "user.home") "/.clj-ns-browser-settings.txt"))
+
+(defn read-settings []
+  (let [f (settings-filename)]
+    (if (.exists (clojure.java.io/as-file f))
+      ;; merge of settings read from file with default-settings allows
+      ;; clj-ns-browser developers to add new key/value pairs to
+      ;; default-settings in later versions, and users of previous
+      ;; versions will automatically pick up those new default
+      ;; settings.
+      (merge default-settings (read-safely f))
+      default-settings)))
+
+(defn write-settings! [settings]
+  ;; TBD: What is most reliable way to print settings so it can be
+  ;; read back in with read-safely?
+  (spit (settings-filename) (with-out-str (clojure.pprint/pprint settings))))
