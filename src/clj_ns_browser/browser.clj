@@ -225,15 +225,18 @@
       [:snapshot-file-not-found f])))
 
 
-(defn write-settings-if-changed! [maybe-new-partial-settings]
+(defn update-settings! [maybe-new-partial-settings]
   (let [maybe-new-settings (merge @settings-atom maybe-new-partial-settings)]
-    ;; Only write settings file if the complete collection of settings
-    ;; has changed.
-    (when (not= @settings-atom maybe-new-settings)
-      ;;(printf "Writing settings file with new partial settings: ")
-      ;;(clojure.pprint/pprint maybe-new-partial-settings)
-      ;;(flush)
-      (write-settings! maybe-new-settings))))
+    ;; Only write settings file if something has changed.
+    (swap! settings-atom
+           (fn [cur-settings next-settings]
+             (when (not= cur-settings next-settings)
+               ;;(printf "Writing settings file with new partial settings: ")
+               ;;(clojure.pprint/pprint maybe-new-partial-settings)
+               ;;(flush)
+               (write-settings! next-settings))
+             next-settings)
+           maybe-new-settings)))
 
 
 ;;(b/transform regx-tf-filter :ns-filter-tf)
@@ -477,14 +480,20 @@
                                        (alert (str "Untraced all traced-vars in namespace: " ns-str)))
                                    (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
 
+(defn update-vars-categorized-cb [cb-action-id new-val]
+  (reset! group-vars-by-object-type-atom new-val)
+  (config! cb-action-id :selected? new-val)
+  (update-settings! {:vars-categorized-listing new-val}))
+
 (add-app-action :vars-categorized-cb-action
   (action :name "Categorized Listing"
           :selected? false
-          :handler 
+          :handler
             (fn [e] (let [root (to-root e)]
                       (letfn [(id [kw] (select-id root kw))]
-                        (swap! group-vars-by-object-type-atom 
-                               (fn [_] (config (id :vars-categorized-cb-action) :selected?))))))))
+                        (update-vars-categorized-cb
+                         (id :vars-categorized-cb-action)
+                         (config (id :vars-categorized-cb-action) :selected?)))))))
 
 (add-app-action :vars-fqn-listing-cb-action
   (action :name "FQN Listing"
@@ -592,13 +601,16 @@
   (letfn [(id [kw] (select-id root kw))]
     (invoke-soon
      (when read-and-apply-saved-settings?
-       (if (:clojuredocs-online @settings-atom)
-         (config! (id :clojuredocs-online-rb) :selected? true)
-         (let [[status msg] (clojuredocs-offline-mode!)]
-           (case status
-             :ok (config! (id :clojuredocs-offline-rb) :selected? true)
-             :snapshot-file-not-found
-             (config! (id :clojuredocs-online-rb) :selected? true)))))
+       (let [settings @settings-atom]
+         (if (:clojuredocs-online settings)
+           (config! (id :clojuredocs-online-rb) :selected? true)
+           (let [[status msg] (clojuredocs-offline-mode!)]
+             (case status
+               :ok (config! (id :clojuredocs-offline-rb) :selected? true)
+               :snapshot-file-not-found
+               (config! (id :clojuredocs-online-rb) :selected? true))))
+         (update-vars-categorized-cb (id :vars-categorized-cb-action)
+                                     (:vars-categorized-listing settings))))
      (selection! (id :ns-cbx) "loaded")
      (selection! (id :vars-cbx) "publics")
      (selection! (id :doc-cbx) "Doc"))))
@@ -940,8 +952,8 @@
                   (config! (id :clojuredocs-online-rb) :selected? true))))
           (let [s (with-out-str (cd-client.core/set-web-mode!))]
             (alert (str "Note: Online ClojureDocs will be used" \newline s))))
-        (write-settings-if-changed! {:clojuredocs-online
-                                     (config (id :clojuredocs-online-rb) :selected?)}))))
+        (update-settings! {:clojuredocs-online
+                           (config (id :clojuredocs-online-rb) :selected?)}))))
     ;;
     ; update locally cached clojuredocs repo
     (b/bind
