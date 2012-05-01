@@ -190,7 +190,7 @@
   Note that input is a var - if you want to input a name-string or -symbol, use:
   (atom? (resolve-fqname n))"
   [v]
-  (isa? clojure.lang.Atom (type v)))
+  (isa? (type v) clojure.lang.Atom))
 
 
 (defn multimethod?
@@ -198,7 +198,7 @@
   Note that input is a var - if you want to input a name-string or -symbol, use:
   (multimethod? (resolve-fqname n))"
   [o]
-  (isa? clojure.lang.MultiFn (type o)))
+  (isa? (type o) clojure.lang.MultiFn))
 
 
 (defn var-multimethod?
@@ -214,7 +214,7 @@
   Note that input is a var - if you want to input a name-string or -symbol, use:
   (protocol? (resolve-fqname n))"
   [v]
-  (and (var? v) (isa? clojure.lang.PersistentArrayMap (type @v)) (:on-interface @v) true))
+  (and (var? v) (isa? (type @v) clojure.lang.PersistentArrayMap) (:on-interface @v) true))
 
 
 (defn deftype?
@@ -254,7 +254,7 @@
   Note that input is a name referring to a namespace - if you want to input a name-string or -symbol, use:
   (namespace? (resolve-fqname n))"
   [maybe-ns]
-  (isa? clojure.lang.Namespace (type maybe-ns)))
+  (isa? (type maybe-ns) clojure.lang.Namespace))
 
 
 ;; Two convenience function for clojure.tools.trace
