@@ -515,14 +515,21 @@
                          (id :vars-categorized-cb-action)
                          (config (id :vars-categorized-cb-action) :selected?)))))))
 
+(defn update-vars-fqn-listing-cb [atm cb-action-id new-val]
+  (reset! atm new-val)
+  (config! cb-action-id :selected? new-val)
+  (update-settings! {:vars-fqn-listing new-val}))
+
 (add-app-action :vars-fqn-listing-cb-action
   (action :name "FQN Listing"
           :selected? false
           :handler 
             (fn [e] (let [root (to-root e)]
                       (letfn [(id [kw] (select-id root kw))]
-                        (swap! (id :vars-fqn-listing-cb-atom)
-                               (fn [_] (not (config (id :vars-fqn-listing-cb-action) :selected?)))))))))
+                        (update-vars-fqn-listing-cb
+                         (id :vars-fqn-listing-cb-atom)
+                         (id :vars-fqn-listing-cb-action)
+                         (config (id :vars-fqn-listing-cb-action) :selected?)))))))
 
 (add-app-action :vars-unmap-btn-action
   (action :name "Un-Map"
@@ -630,7 +637,11 @@
                :snapshot-file-not-found
                (config! (id :clojuredocs-online-rb) :selected? true))))
          (update-vars-categorized-cb (id :vars-categorized-cb-action)
-                                     (:vars-categorized-listing settings))))
+                                     (:vars-categorized-listing settings))
+         (update-vars-fqn-listing-cb (id :vars-fqn-listing-cb-atom)
+                                     (id :vars-fqn-listing-cb-action)
+                                     (:vars-fqn-listing settings))
+         ))
      (selection! (id :ns-cbx) "loaded")
      (selection! (id :vars-cbx) "Vars - public")
      (selection! (id :doc-cbx) "Doc"))))
@@ -798,7 +809,7 @@
       (b/transform (fn [o]
         (let [ns-list (selection (id :ns-lb) {:multi? true})
               n (and ns-list (map #(find-ns (symbol %)) ns-list))
-              always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)  ; tbd: make this user-configurable
+              always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (if n

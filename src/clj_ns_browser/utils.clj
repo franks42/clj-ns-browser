@@ -856,8 +856,8 @@ any code."
 (def default-settings
   {:clojuredocs-online true
    :vars-categorized-listing false
+   :vars-fqn-listing false
    ;; TBD: Still to add
-   ;;:vars-fqn-listing false
    ;;:vars-search-docs-also false
    })
 
