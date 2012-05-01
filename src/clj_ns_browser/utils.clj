@@ -263,7 +263,15 @@
 (defn var-traceable? 
   "Predicate that returns whether a var is traceable or not."
   [v]
-  (and (var? v) (ifn? @v) (-> v meta :macro not)))
+  (let [vv (or (and (var? v) v) (and (symbol? v) (resolve v)))]
+    (and (var? vv) (ifn? @vv) (-> vv meta :macro not))))
+
+
+(defn dynamic?
+  "Predicate that returns whether a var is dynamic."
+  [v] 
+  (let [vv (or (and (var? v) v) (and (symbol? v) (resolve v)))]
+    (and (var? vv) (meta vv) (:dynamic (meta vv)))))
 
 
 (defn var-traced?
@@ -273,8 +281,8 @@
   ([ns s]
      (var-traced? (ns-resolve ns s)))
   ([v]
-     (let [vv (if (var? v) v (resolve v))]
-       (not (nil? ((meta vv) ::clojure.tools.trace/traced))))))
+    (let [vv (or (and (var? v) v) (and (symbol? v) (resolve v)))]
+       (and (var? vv) (meta vv) ((meta vv) ::clojure.tools.trace/traced)))))
 
 
 ;; should move to clj-info
@@ -429,6 +437,12 @@
   the namespace."
   [a-ns]
   (filter #(var-multimethod? (val %)) (ns-interns (resolve-fqname a-ns))))
+
+(defn ns-interns-var-dynamic
+  "Returns a map of the dynamic vars in the publics mappings for
+  the namespace."
+  [a-ns]
+  (filter #(dynamic? (val %)) (ns-interns (resolve-fqname a-ns))))
 
 (defn ns-interns-var-traced
   "Returns a map of the multimethod's in the publics mappings for
@@ -623,6 +637,10 @@
   ""
   [v]
   (str
+    (when (namespace? v) "<namespace> " )
+    (when (class? v) "<class> " )
+    (when (var? v) "<var> " )
+    (when (dynamic? v) "<dynamic> " )
     (when (special-form? v) "<special-form> " )
     (when (macro? v) "<macro> " )
     (when (protocol? v) "<protocol> " )
@@ -632,15 +650,12 @@
     (when (fn? v) "<fn> " )
     (when (ifn? v) "<ifn> " )
     (when (char? v) "<char> " )
-    (when (namespace? v) "<namespace> " )
     ;(when (var-traced? v) "<var-traced> " )
     (when (atom? v) "<atom> " )
     (when (string? v) "<string> " )
     (when (symbol? v) "<symbol> " )
-    (when (var? v) "<var> " )
     (when (deftype? v) "<deftype> " )
     (when (defrecord? v) "<defrecord> " )
-    (when (class? v) "<class> " )
     (when (keyword? v) "<keyword> " )
     (when (coll? v) "<coll> " )
     (when (list? v) "<list> " )

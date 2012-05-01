@@ -154,6 +154,7 @@
   "Vars - protocol"
   "Vars - protocol-fn"
   "Vars - multimethod"
+  "Vars - dynamic"
   "Vars - traced"
   "Classes - all"
   "Classes - deftype"
@@ -189,6 +190,8 @@
                                          :ns-map-subset ns-interns-protocol-fn %1 %2 %3)
                             "Vars - multimethod"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-var-multimethod %1 %2 %3)
+                            "Vars - dynamic"  #(symbols-of-ns-coll
+                                         :ns-map-subset ns-interns-var-dynamic %1 %2 %3)
                             "Vars - traced"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-var-traced %1 %2 %3)
                             "Vars - private" #(symbols-of-ns-coll
