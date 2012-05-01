@@ -531,6 +531,12 @@
                          (id :vars-fqn-listing-cb-action)
                          (config (id :vars-fqn-listing-cb-action) :selected?)))))))
 
+(defn update-vars-search-doc-also [cb-action-id new-val]
+  (reset! vars-search-doc-also-cb-atom new-val)
+  (config! cb-action-id :selected? new-val)
+  (update-settings! {:vars-search-doc-also new-val}))
+
+
 (add-app-action :vars-unmap-btn-action
   (action :name "Un-Map"
           :enabled? false))
@@ -641,6 +647,8 @@
          (update-vars-fqn-listing-cb (id :vars-fqn-listing-cb-atom)
                                      (id :vars-fqn-listing-cb-action)
                                      (:vars-fqn-listing settings))
+         (update-vars-search-doc-also (id :vars-search-doc-also-cb)
+                                      (:vars-search-doc-also settings))
          ))
      (selection! (id :ns-cbx) "loaded")
      (selection! (id :vars-cbx) "Vars - public")
@@ -1118,7 +1126,9 @@
         :selected? false)
 
       (config! vars-search-doc-also-cb 
-         :listen [:action (fn [e] (swap! vars-search-doc-also-cb-atom (fn [_] (config vars-search-doc-also-cb :selected?))))]
+        :listen [:action (fn [e] (update-vars-search-doc-also
+                                  vars-search-doc-also-cb
+                                  (config vars-search-doc-also-cb :selected?)))]
         :selected? false)
       
       (config! color-coding-cb :selected? true)

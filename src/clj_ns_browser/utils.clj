@@ -857,8 +857,7 @@ any code."
   {:clojuredocs-online true
    :vars-categorized-listing false
    :vars-fqn-listing false
-   ;; TBD: Still to add
-   ;;:vars-search-docs-also false
+   :vars-search-doc-also false
    })
 
 (defn settings-filename []
