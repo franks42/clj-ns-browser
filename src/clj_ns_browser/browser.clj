@@ -607,7 +607,7 @@
       :action (fn [event] (swap! (id :color-coding-cb-atom) not)))
     ;; vars
     (config! (id :vars-entries-lbl) :text "0")
-    ; doc
+    ;; doc
     (config! (id :doc-tf) :text "")
     (config! (id :doc-ta) :text "                                                                        ")
     (selection! (id :ns-cbx) "loaded")
@@ -834,11 +834,11 @@
     ;;
     ;; typed regex in ns-filter-tf => visual feedback about validity
     (b/bind
-      ; As the text of the textbox changes ...
+      ;; As the text of the textbox changes ...
       (id :ns-filter-tf)
-      ; Convert it to a regex, or nil if it's invalid
+      ;; Convert it to a regex, or nil if it's invalid
       (b/transform #(try (re-pattern %) (catch Exception e nil)))
-      ; Now split into two paths ...
+      ;; Now split into two paths ...
       (b/bind
         (b/transform #(if % "white" "lightcoral"))
         (b/notify-soon)
@@ -846,11 +846,11 @@
     ;;
     ;; typed regex in vars-filter-tf => visual feedback about validity
     (b/bind
-      ; As the text of the textbox changes ...
+      ;; As the text of the textbox changes ...
       (id :vars-filter-tf)
-      ; Convert it to a regex, or nil if it's invalid
+      ;; Convert it to a regex, or nil if it's invalid
       (b/transform #(try (re-pattern %) (catch Exception e nil)))
-      ; Now split into two paths ...
+      ;; Now split into two paths ...
       (b/bind
         (b/transform #(if % "white" "lightcoral"))
         (b/notify-soon)
@@ -859,7 +859,7 @@
     ;; updated fqn in doc-tf or doc-cbx =>
     ;; new render-doc-text in doc-ta
     (b/bind
-      ; As the text of the fqn text field changes ...
+      ;; As the text of the fqn text field changes ...
       (apply b/funnel [(id :doc-tf) (id :doc-cbx) vars-lb-refresh-atom])
       (b/filter (fn [[doc-tf doc-cbx]]
                   (not (or (nil? doc-tf)  (= "" doc-tf)
@@ -885,16 +885,16 @@
             (let [type-str (get-object-type fqn)]
               (cond 
                 (or (nil? fqn) (= "" fqn)) :white
-                (= type-str "Macro") :tomato ;;macro
-                (= type-str "Function") :lightgreen  ;; function
-                (= type-str "Multimethod") :lightgreen  ;; function
-                (= type-str "Protocol Interface/Function") :lightgreen  ;; function
-                (= type-str "Special Form") :lightsalmon  ;; function
-                (= type-str "Special Symbol") :lightsalmon  ;; function
-                (= type-str "Protocol") :lightblue  ;; function
-                (= type-str "Namespace") :blanchedalmond  ;; function
-                (= type-str "Class") :wheat  ;; function
-                (= type-str "java.lang.Class") :wheat  ;; function
+                (= type-str "Macro") :tomato
+                (= type-str "Function") :lightgreen
+                (= type-str "Multimethod") :lightgreen
+                (= type-str "Protocol Interface/Function") :lightgreen
+                (= type-str "Special Form") :lightsalmon
+                (= type-str "Special Symbol") :lightsalmon
+                (= type-str "Protocol") :lightblue
+                (= type-str "Namespace") :blanchedalmond
+                (= type-str "Class") :wheat
+                (= type-str "java.lang.Class") :wheat
                 true :white))
             :white))))
       (b/property (id :doc-tf) :background))
@@ -925,7 +925,7 @@
                   false))))
       (b/notify-soon)
       (b/property (id :edit-btn) :enabled?))
-    ;
+    ;;
     ;; browser-btn pressed =>
     ;;
     (b/bind
@@ -964,10 +964,10 @@
           (when-let [m (meta-when-file (config (id :doc-tf) :text))]
             (when-let [e (:out (clojure.java.shell/sh "bash" "-c" (str "echo -n $EDITOR")))]
               (:exit (clojure.java.shell/sh "bash" "-c" (str e " +" (:line m) " " (:file m))))))))))
-    ;
-    ; menu buttons
     ;;
-    ; use local copy for clojuredocs lookup of comments/examples
+    ;; menu buttons
+    ;;
+    ;; use local copy for clojuredocs lookup of comments/examples
     (b/bind
       (b/funnel
         (id :clojuredocs-offline-rb-atom)
@@ -986,7 +986,7 @@
         (update-settings! {:clojuredocs-online
                            (config (id :clojuredocs-online-rb) :selected?)}))))
     ;;
-    ; update locally cached clojuredocs repo
+    ;; update locally cached clojuredocs repo
     (b/bind
       (id :update-clojuredocs-btn-atom)
       (b/transform (fn [& o]
