@@ -377,7 +377,7 @@
                                            (str sym))
                                 :display-sym ds
                                 :display-str (str ds)
-                                :name-to-search (str sym)})))]
+                                :name-to-search (str ds)})))]
       (set (if (and (= ns-action :aliases)
                     (> (count ns-coll) 1))
              [ {:name-to-search ""
