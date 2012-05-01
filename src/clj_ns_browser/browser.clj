@@ -359,6 +359,10 @@
                   (invoke-soon (browser-with-fqn *ns* fqn (new-clj-ns-browser)))
                   (invoke-soon (new-clj-ns-browser))))))))
 
+(add-app-action :go-github-wiki-action
+  (action :name "Clj-NS-Browser Wiki..."
+          :handler (fn [a] (future (clojure.java.browse/browse-url
+            "https://github.com/franks42/clj-ns-browser/wiki")))))
 (add-app-action :go-github-action
   (action :name "Clj-NS-Browser GitHub..."
           :handler (fn [a] (future (clojure.java.browse/browse-url
@@ -1142,7 +1146,7 @@
         (id :manual-refresh-browser-action) auto-refresh-browser-cb :separator (id :bring-all-windows-to-front-action) 
         (id :cycle-through-windows-action)])
 
-      (config! help-menu :items [(id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-stackoverflow-action) (id :go-jira-action) (id :go-about-action)])
+      (config! help-menu :items [(id :go-github-wiki-action) (id :go-github-action) (id :go-clojure.org-action) (id :go-clojuredocs-action) (id :go-cheatsheet-action) (id :go-stackoverflow-action) (id :go-jira-action) (id :go-about-action)])
       (config! docs-menu :items [update-clojuredocs :separator
                                  clojuredocs-online-rb clojuredocs-offline-rb
                                  :separator])
