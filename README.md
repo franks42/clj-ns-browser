@@ -81,30 +81,7 @@ When you look at the source code of those vars in your local project, then the e
 
 ## Issues
 
-* Code examples seem to refer to Clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser.  This is due to the current behavior of the cd-client library when querying the clojuredocs.org site live.  Using an offline snapshot with cd-client gives Clojure 1.3 examples (not fully understood why, and there may be exceptions).
-
-
-## Todo
-
-* get swing html-text widget to work properly and replace the text-area (looks nicer, will have links working, code-highlighting, etc...) - rendering works in stand-alone browser window, but swing-widget doesn't look very nice...
-
-* try different window layout with ns and var list-boxes above doc text-area
-
-* see if tools.namespace could be enhanced to get the (jar)file-name associated with a ns, which could give an indication of the version also (?)
-
-** Can defmulti or defmethod symbols have doc strings?  Examples?  If
-   not, should they be enhanced to do so?
-
-** These are categorized as Var by get-docs-map, but is there a way
-   they could instead be categorized as Function?
-   clj-http.core/proxy-delete-with-body and proxy-get-with-body.  It
-   looks like the extension of the docsmap protocol for type
-   clojure.lang.Var in clj-info's doc2map.clj is categorizing those as
-   Vars rather than Functions because either they have no metadata, or
-   if they do, their metadata has no value for the key :arglists.
-
-** Consider changing vars with category Protocol so that VALUE does
-   not show up as a map, and "Inspect Coll" button is disabled.
+* Code examples seem to refer to Clojure 1.2 instead of 1.3, which is obvious when you bring clojuredocs up in the browser.  Workaround: Use Docs -> ClojureDocs Update local repo to get a snapshot of ClojureDocs.org contents, then Docs -> ClojureDocs Offline/local to use that local snapshot instead of interactively querying the ClojureDocs.org contents.  This also speeds up browsing with examples displayed, and works even when you don't have Internet access.  The issue is due to the current behavior of the cd-client library when querying the clojuredocs.org site live.
 
 
 ## Acknowledgment
