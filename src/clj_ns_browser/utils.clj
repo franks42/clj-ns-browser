@@ -854,7 +854,12 @@ any code."
 
 
 (def default-settings
-  {:clojuredocs-online true})
+  {:clojuredocs-online true
+   :vars-categorized-listing false
+   ;; TBD: Still to add
+   ;;:vars-fqn-listing false
+   ;;:vars-search-docs-also false
+   })
 
 (defn settings-filename []
   (str (System/getProperty "user.home") "/.clj-ns-browser-settings.txt"))
