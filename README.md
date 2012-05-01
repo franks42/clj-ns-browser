@@ -88,21 +88,9 @@ When you look at the source code of those vars in your local project, then the e
 
 * get swing html-text widget to work properly and replace the text-area (looks nicer, will have links working, code-highlighting, etc...) - rendering works in stand-alone browser window, but swing-widget doesn't look very nice...
 
-* auto-scroll selected ns and var in view of their listbox - evident from (sdoc...), which does select the ns&var, but many times items are not shown in visible list.
-
-* popup menus (menus and keystroke-shortcuts work)
-
 * try different window layout with ns and var list-boxes above doc text-area
 
-* remove cljsh/repls dependency - cleanup the utility and clj-info
-
-* maybe makes more sense to select on functions/macros/classes/data than publics/interns/maps - especially for novice users (?).  Or in addition to selecting on functions/macros/classes/data, make it clear in the list which category each symbol falls in, and let user group symbols by this category, e.g. all classes, then all data, then all macros, then all functions.
-
-* integrate trace with browser
-
 * see if tools.namespace could be enhanced to get the (jar)file-name associated with a ns, which could give an indication of the version also (?)
-
-* Enhance the grouping of Vars by object type:
 
 ** Can defmulti or defmethod symbols have doc strings?  Examples?  If
    not, should they be enhanced to do so?
