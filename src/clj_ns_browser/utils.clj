@@ -152,6 +152,14 @@
           [nil n-str])))))
 
 
+(defn local-name 
+  [fqn]
+  (when-let [fqn-sym (fqname-symbol fqn)]
+    (let [name-str (name fqn-sym)]
+      (if-let [ns-str (namespace fqn-sym)]
+        name-str
+        (re-find #"[^\.]+$" name-str)))))
+
 ;; basic type-predicates
 ;; note that we already have char? class? coll? decimal? empty? fn? ifn? future? keyword? list?
 ;; map? nil? number? seq? sequential? set? special-symbol? string? symbol? var? vector?

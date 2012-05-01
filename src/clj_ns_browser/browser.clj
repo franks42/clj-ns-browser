@@ -145,41 +145,59 @@
 (def ns-cbx-value-list ["loaded" "unloaded"])
 (def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
                             "unloaded"  all-ns-unloaded})
-(def vars-cbx-value-list ["aliases" "imports" "interns" "map" "publics"
-                          "privates" "refers" "refers w/o core" "special-forms"])
-(def vars-cbx-value-fn-map {"aliases"  #(symbols-of-ns-coll
+(def vars-cbx-value-list [
+  "Vars - all"
+  "Vars - public"
+  "Vars - private"
+  "Vars - macro"
+  "Vars - defn"
+  "Vars - protocol"
+  "Vars - protocol-fn"
+  "Vars - multimethod"
+  "Vars - traced"
+  "Classes - all"
+  "Classes - deftype"
+  "Classes - defrecord"
+  "Refers - all"
+  "Refers w/o core"
+  "All"
+  "Aliases"
+  "Special-Forms"
+  ])
+
+(def vars-cbx-value-fn-map {"Aliases"  #(symbols-of-ns-coll
                                          :aliases ns-aliases %1 %2 %3)
-                            "imports"  #(symbols-of-ns-coll
+                            "Classes - all"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-imports %1 %2 %3)
-                            "interns"  #(symbols-of-ns-coll
+                            "Vars - all"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns %1 %2 %3)
-                            "map"      #(symbols-of-ns-coll
+                            "All"      #(symbols-of-ns-coll
                                          :ns-map-subset ns-map %1 %2 %3)
-                            "map-deftype"      #(symbols-of-ns-coll
+                            "Classes - deftype"      #(symbols-of-ns-coll
                                          :ns-map-subset ns-map-deftype %1 %2 %3)
-                            "map-defrecord"    #(symbols-of-ns-coll
+                            "Classes - defrecord"    #(symbols-of-ns-coll
                                          :ns-map-subset ns-map-defrecord %1 %2 %3)
-                            "publics"  #(symbols-of-ns-coll
+                            "Vars - public"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-publics %1 %2 %3)
-                            "interns-macro"  #(symbols-of-ns-coll
+                            "Vars - macro"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-macro %1 %2 %3)
-                            "interns-defn"  #(symbols-of-ns-coll
+                            "Vars - defn"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-defn %1 %2 %3)
-                            "interns-protocol"  #(symbols-of-ns-coll
+                            "Vars - protocol"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-protocol %1 %2 %3)
-                            "interns-protocol-fn"  #(symbols-of-ns-coll
+                            "Vars - protocol-fn"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-protocol-fn %1 %2 %3)
-                            "interns-var-multimethod"  #(symbols-of-ns-coll
+                            "Vars - multimethod"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-var-multimethod %1 %2 %3)
-                            "interns-var-traced"  #(symbols-of-ns-coll
+                            "Vars - traced"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-interns-var-traced %1 %2 %3)
-                            "privates" #(symbols-of-ns-coll
+                            "Vars - private" #(symbols-of-ns-coll
                                          :ns-map-subset ns-privates %1 %2 %3)
-                            "refers"   #(symbols-of-ns-coll
+                            "Refers - all"   #(symbols-of-ns-coll
                                          :ns-map-subset ns-refers %1 %2 %3)
-                            "refers w/o core"   #(symbols-of-ns-coll
+                            "Refers w/o core"   #(symbols-of-ns-coll
                                          :ns-map-subset ns-refers-wo-core %1 %2 %3)
-                            "special-forms" #(symbols-of-ns-coll
+                            "Special-Forms" #(symbols-of-ns-coll
                                               :special-forms ns-special-forms %1 %2 %3)
                             })
 
@@ -542,7 +560,7 @@
     (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
     (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
-    ;; ns
+    (config! (id :vars-cbx) :model vars-cbx-value-list)
     (config! (id :ns-lb) :model @all-ns-loaded-atom)
     (config! (id :ns-lb) :selection-mode :multi-interval) ;; experimental...
     (config! (id :vars-lb) :model [])
@@ -577,7 +595,7 @@
     (config! (id :doc-tf) :text "")
     (config! (id :doc-ta) :text "                                                                        ")
     (selection! (id :ns-cbx) "loaded")
-    (selection! (id :vars-cbx) "publics")
+    (selection! (id :vars-cbx) "Vars - public")
     (selection! (id :doc-cbx) "Doc")))
 
 
@@ -602,7 +620,7 @@
              :snapshot-file-not-found
              (config! (id :clojuredocs-online-rb) :selected? true)))))
      (selection! (id :ns-cbx) "loaded")
-     (selection! (id :vars-cbx) "publics")
+     (selection! (id :vars-cbx) "Vars - public")
      (selection! (id :doc-cbx) "Doc"))))
 
 
@@ -1202,18 +1220,24 @@
           n-str (selection (id :ns-lb))]
       (if-let [fqn (and a-name 
                         (or (string? a-name)(symbol? a-name))
-                        (fqname (or a-ns n-str *ns*) a-name))]
-        (let [sym1 (symbol fqn)
+                        (or (fqname (or a-ns n-str *ns*) a-name)
+                            (fqname (or n-str *ns*) a-name)))
+                        ]
+        (let [lname-str (local-name fqn)
+              fqn-listing (config (id :vars-fqn-listing-cb-action) :selected?)
+              sym1 (symbol fqn)
               name1 (name sym1)
               ns1 (try (namespace sym1)(catch Exception e))]
           (if ns1
             ;; we have a fq-var as a-ns/a-name
             (invoke-soon
               (selection! (id :ns-cbx) "loaded")
-              (selection! (id :vars-cbx) "publics")
+              (selection! (id :vars-cbx) "Vars - all")
               (selection! (id :ns-lb) ns1)
               (invoke-later 
-                (selection! (id :vars-lb) name1)
+                (if fqn-listing
+                  (selection! (id :vars-lb) fqn)
+                  (selection! (id :vars-lb) lname-str))
                 (ensure-selection-visible (id :ns-lb))
                 (ensure-selection-visible (id :vars-lb))))
               
@@ -1221,7 +1245,6 @@
               ;; should be namespace
               (invoke-soon
                 (selection! (id :ns-lb) name1)
-                (selection! (id :doc-cbx) "Doc")
                 (ensure-selection-visible (id :ns-lb))
                 (ensure-selection-visible (id :vars-lb)))
                 
@@ -1231,15 +1254,17 @@
                   (do
                     (selection! (id :ns-cbx) "loaded")
                     (selection! (id :ns-lb) (str *ns*))
-                    (selection! (id :vars-cbx) "special-forms")
+                    (selection! (id :vars-cbx) "Special-Forms")
                     (selection! (id :vars-lb) name1))
                   (do
                     (selection! (id :ns-lb) (str *ns*))
-                    (selection! (id :vars-cbx) "imports")
-                    (selection! (id :vars-lb) name1)
-                    (selection! (id :doc-cbx) "Doc")))
-                (ensure-selection-visible (id :ns-lb))
-                (ensure-selection-visible (id :vars-lb)))))
+                    (selection! (id :vars-cbx) "Classes - all")
+                    (if fqn-listing
+                      (selection! (id :vars-lb) fqn)
+                      (selection! (id :vars-lb) lname-str))))
+                (invoke-later 
+                  (ensure-selection-visible (id :ns-lb))
+                  (ensure-selection-visible (id :vars-lb))))))
             (refresh-clj-ns-browser root)
             fqn)
         (when (nil? a-ns)
