@@ -47,7 +47,7 @@
            i-l (doall (filter #(not (nil? %))(map #(.getInterfaces %) c-l)))]
     (let [r (doall (map #(map interface-hierachy-tree1 %) i-l))]
 ;;       r)))
-      (into #{} (doall (flatten r))))))
+      (sort-by #(.getName %) (vec (into #{} (doall (flatten r))))))))
 
 
 ;; clojure.core/special-symbol? tests for inclusion in:
@@ -215,7 +215,7 @@
   (isa? o clojure.lang.IType))
 
 
-(defn record?
+(defn defrecord?
   "Predicate that returns true when object o refers to a defrecord, and false otherwise."
   [o]
   (isa? o clojure.lang.IRecord))
@@ -429,10 +429,16 @@
   (filter #(var-traced? (val %)) (ns-interns (resolve-fqname a-ns))))
 
 (defn ns-map-deftype
-  "Returns a map of the multimethod's in the publics mappings for
+  "Returns a map of the deftype's classes in the mappings for
   the namespace."
   [a-ns]
   (filter #(deftype? (val %)) (ns-map (resolve-fqname a-ns))))
+
+(defn ns-map-defrecord
+  "Returns a map of the defrecord's classes in the mappings for
+  the namespace."
+  [a-ns]
+  (filter #(defrecord? (val %)) (ns-map (resolve-fqname a-ns))))
 
 ;;
 
@@ -625,7 +631,7 @@
     (when (symbol? v) "<symbol> " )
     (when (var? v) "<var> " )
     (when (deftype? v) "<deftype> " )
-    (when (record? v) "<record> " )
+    (when (defrecord? v) "<defrecord> " )
     (when (class? v) "<class> " )
     (when (keyword? v) "<keyword> " )
     (when (coll? v) "<coll> " )

@@ -157,6 +157,8 @@
                                          :ns-map-subset ns-map %1 %2 %3)
                             "map-deftype"      #(symbols-of-ns-coll
                                          :ns-map-subset ns-map-deftype %1 %2 %3)
+                            "map-defrecord"    #(symbols-of-ns-coll
+                                         :ns-map-subset ns-map-defrecord %1 %2 %3)
                             "publics"  #(symbols-of-ns-coll
                                          :ns-map-subset ns-publics %1 %2 %3)
                             "interns-macro"  #(symbols-of-ns-coll
@@ -356,16 +358,16 @@
   (action :name "JIRA..."
           :handler (fn [a] (future (clojure.java.browse/browse-url
             "http://dev.clojure.org/jira/browse/CLJ")))))
-(add-app-action :go-stackoverflow-action 
+(add-app-action :go-stackoverflow-action
   (action :name "Stackoverflow..."
           :handler (fn [e] 
             (let [id (partial select-id (to-root e))]
               (let [fqn (config (id :doc-tf) :text)]
-              (if-let [fqn-name (fqname fqn)]
-                (let [ns-n-class (ns-name-class-str fqn-name)
-                      sname (if (nil? (second ns-n-class)) (first ns-n-class)(second ns-n-class))]
-                  (future (clojure.java.browse/browse-url
-                    (str "http://stackoverflow.com/search?q=clojure+" sname))))))))))
+                (if-let [fqn-name (fqname fqn)]
+                  (let [ns-n-class (ns-name-class-str fqn-name)
+                        sname (if (nil? (second ns-n-class)) (first ns-n-class)(second ns-n-class))]
+                    (future (clojure.java.browse/browse-url
+                      (str "http://stackoverflow.com/search?q=clojure+" sname))))))))))
 (add-app-action :go-about-action
   (action :name "About..."
           :handler (fn [a] (invoke-later (alert (str "Clojure Namespace Browser (" clj-ns-browser-version ")" \newline
