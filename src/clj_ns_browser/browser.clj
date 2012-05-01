@@ -759,7 +759,7 @@
       (b/selection (id :vars-lb))
       (b/transform (fn [v]
         (if v
-          (let [fqn (if (= "aliases" (selection (id :vars-cbx)))
+          (let [fqn (if (= "Aliases" (selection (id :vars-cbx)))
                       (when-let [n (get (ns-aliases
                                          (the-ns (symbol
                                                   (selection (id :ns-lb)))))
