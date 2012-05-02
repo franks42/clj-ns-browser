@@ -18,8 +18,8 @@
         [clojure.pprint :only [pprint]]
         [clj-info.doc2map :only [get-docs-map]]
         [clj-info.doc2txt :only [doc2txt]]
-        [clj-info.doc2html :only [doc2html]]
-        [alex-and-georges.debug-repl]))
+        [clj-info.doc2html :only [doc2html]]))
+        ;;[alex-and-georges.debug-repl]))
 
 
 (defn class-hierarchy-list1
