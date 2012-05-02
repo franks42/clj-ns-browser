@@ -1121,8 +1121,11 @@
       (config! ns-menu :items [(id :ns-require-btn-action) :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
       (config! vars-menu :items 
-        [(id :var-trace-btn-action) :separator (id :vars-unmap-btn-action) 
-         (id :vars-unalias-btn-action) :separator vars-categorized-cb 
+               [(id :var-trace-btn-action)
+                ;;:separator
+                ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action)
+                :separator
+                vars-categorized-cb 
          vars-fqn-listing-cb vars-search-doc-also-cb])
 
       
@@ -1186,8 +1189,8 @@
                                     :separator (id :fqn-history-back-action)
                                     :separator
                                     (id :var-trace-btn-action) 
-                                    :separator 
-                                    (id :vars-unmap-btn-action) (id :vars-unalias-btn-action) 
+                                    ;;:separator 
+                                    ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action) 
                                     :separator 
                                     (checkbox-menu-item :action (id :vars-categorized-cb-action))
                                     (checkbox-menu-item :action (id :vars-fqn-listing-cb-action))
