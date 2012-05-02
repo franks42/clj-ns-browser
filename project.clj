@@ -3,7 +3,7 @@
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [seesaw "1.4.1"]
                  [org.clojure/tools.namespace "0.1.2"]
-                 [clj-info "0.2.3-SNAPSHOT"]
+                 [clj-info "0.2.3"]
                  [hiccup "0.3.8"]
                  [org.clojure/tools.trace "0.7.3"]
                  [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
