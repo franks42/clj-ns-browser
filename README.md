@@ -2,7 +2,7 @@
 
 Smalltalk-like namespace/class/var/function browser for Clojure-code's doc-strings, source-code, clojuredocs-examples & comments, pprint'ing of values based on seesaw.
 
-Look for the last released version on clojars.org: [clj-ns-browser "1.1.0"].
+Look for the last released version on clojars.org: [clj-ns-browser "1.2.0"].
 
 
 ## Install
@@ -12,7 +12,7 @@ For any project where you want to add the ability to browse your currently loade
 * in your project.clj, add:
 
 ```
-    :dev-dependencies [[clj-ns-browser "1.1.0"]]
+    :dev-dependencies [[clj-ns-browser "1.2.0"]]
 ```
 
 Then:
