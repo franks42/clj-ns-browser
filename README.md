@@ -36,7 +36,7 @@ A few of the highlights of the browser's feature set are:
 
 * see live-updates in realtime of new namespaces, new vars, and changed values... as they are defined by you at the repl or by your running program.
 
-* demo videos where Andy walks you thru the browser's features one-by-one ([Part 1](http://www.youtube.com/watch?v=wz3lD5zD8ag) and [Part 2](www.youtube.com/watch?v=aYvegaFVKHw))
+* demo videos where Andy walks you thru the browser's features one-by-one ([Part 1](http://www.youtube.com/watch?v=wz3lD5zD8ag) and [Part 2](http://www.youtube.com/watch?v=aYvegaFVKHw))
 
 * too much to list here...
 
