@@ -8,37 +8,35 @@ Look for the last released version on clojars.org: [clj-ns-browser "1.2.0"].
 
 ## Introduction
 
-The "it starts to look like a real app" release, "1.2.0", adds a long list of new features to clj-ns-browser compared to the legacy "1.1.0" release that is already a few weeks old. 
+The "It starts to look like a real App" release, "1.2.0", adds a long list of new features to clj-ns-browser compared to the ancient, legacy "1.1.0" release that is already a few weeks old. 
 
 One important distinction between the new and the old version, is the use of menus, popup-menus, keyboard short-cuts, copy&paste, drag&drop... all thanks to seesaw of course.
 
-A few of the highlights of the browser's feature set are:
+A few of the highlights of the new browser's feature set are:
 
-* seeing the loaded and unloaded namespaces with a one-click (require ...) option
+* see the loaded and unloaded namespaces, and "require" with one-click
 
-* see the doc-string of a selected var/namespace plus optionally the clojuredocs' examples, comments and see alsos.
+* see the doc-string of a selected var/namespace plus optionally the clojuredocs' examples, comments and see alsos, as well as the source code.
 
 * seeing the list of vars/classes either as local names or as fully qualified ones.
 
-* the ability to select more than one namespace and to use a regex filter to display the var-list... even with optional searching/matching of the associated doc-strings.
+* select one or more namespaces and use a regex filter to display the var-list... even with optional searching/matching of the vars' doc-strings.
 
-* Predefined var/class-filters to see only macros/functions/protocols/multimethods/dynamic or deftypes/defrecords, or refers with and w/o clojure.core. - of course you can still use a regex-filter in addition on those results
+* Predefined var/class-filters to see only macros/functions/protocols/multimethods/dynamic or deftypes/defrecords, or refers with and w/o clojure.core. - in addition you can still use a regex-filter on those results
 
 * adding a trace to a function with a simple button click and seeing the invocation information in your repl as the function is called - tools.trace is an underused gem of a tool!
 
 * (optional) color-coding based on the var-type: macros are red... functions are green.
 
-* optional download of the most recent clojuredocs-repo copy with on/off-line clojuredocs-info retrieval through simple menu commands
+* optional download and caching of the most recent clojuredocs-repo copy with on/off-line clojuredocs-info retrieval through simple menu commands
 
 * see basic info about (java-)classes like their class-inheritance list and the set of implemented interfaces
 
-* see the type and values of vars and the type and value of the @var... with their associated meta-maps.
+* see the type and values of vars and the type and value of the @var... with their associated meta-data.
 
 * see live-updates in realtime of new namespaces, new vars, and changed values... as they are defined by you at the repl or by your running program.
 
-* demo videos where Andy walks you thru the browser's features one-by-one ([Part 1](http://www.youtube.com/watch?v=wz3lD5zD8ag) and [Part 2](http://www.youtube.com/watch?v=aYvegaFVKHw))
-
-* too much to list here...
+* on top of all that, we also have demo videos where Andy walks you thru the browser's features one-by-one ([Part 1](http://www.youtube.com/watch?v=wz3lD5zD8ag) and [Part 2](http://www.youtube.com/watch?v=aYvegaFVKHw))
 
 That partial feature list should be more than enough to make you want to read the next section...
 
@@ -65,7 +63,7 @@ It should actually work from any repl - tested on MacOSX, Linux, even Windows...
 
 ## Documentation, Usage, Issues, Futures...
 
-Please take a look at the clj-ns-browser's wiki for detailed information about features, usage, and feedback: "https://github.com/franks42/clj-ns-browser/wiki"
+Please take a look at the clj-ns-browser's wiki for detailed information about features, usage, and feedback: "https://github.com/franks42/clj-ns-browser/wiki"  (a work in progress...)
 
 
 ## Authors
