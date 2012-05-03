@@ -9,7 +9,7 @@ Look for the last released version on clojars.org: [clj-ns-browser "1.2.0"].
 ## Introduction
 
 The "it starts to look like a real app" release, "1.2.0", adds a long list of new features to clj-ns-browser compared to the legacy "1.1.0" release that is already a few weeks old. 
-=======
+
 ```
     :dev-dependencies [[clj-ns-browser "1.2.0"]]
 ```
@@ -40,7 +40,7 @@ A few of the highlights of the browser's feature set are:
 
 * see live-updates in realtime of new namespaces, new vars, and changed values... as they are defined by you at the repl or by your running program.
 
-* instructional, professional looking videos where Andy walks you thru the browser's features one-by-one (see "" if you can's wait)
+* instructional, professional looking videos where Andy walks you thru the browser's features one-by-one (see "" if you can't wait)
 
 * too much to list here...
 
