@@ -4,13 +4,20 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>clj-ns-browser</groupId>
   <artifactId>clj-ns-browser</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
+  <version>1.2.0</version>
   <name>clj-ns-browser</name>
   <description>Smalltalk-like namespace/class/var/function browser for Clojure.</description>
+  <url>https://github.com/franks42/clj-ns-browser</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License</name>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+    </license>
+  </licenses>
   <scm>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>99c560a55efd9b29933461b19fc0c454463c6154</tag>
+    <tag>60e00ce41992adc49e324f6f63b350da8c8c61c9</tag>
     <url>https://github.com/franks42/clj-ns-browser</url>
   </scm>
   <build>
@@ -45,12 +52,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>franks42</groupId>
-      <artifactId>debug-repl</artifactId>
-      <version>0.3.1-FS</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>codox</groupId>
       <artifactId>codox</artifactId>
       <version>0.5.0</version>
@@ -62,9 +63,9 @@
       <version>1.3.0</version>
     </dependency>
     <dependency>
-      <groupId>franks42</groupId>
+      <groupId>seesaw</groupId>
       <artifactId>seesaw</artifactId>
-      <version>1.4.1-SNAPSHOT-FS</version>
+      <version>1.4.1</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -74,7 +75,7 @@
     <dependency>
       <groupId>clj-info</groupId>
       <artifactId>clj-info</artifactId>
-      <version>0.2.3-SNAPSHOT</version>
+      <version>0.2.3</version>
     </dependency>
     <dependency>
       <groupId>hiccup</groupId>
