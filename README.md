@@ -8,7 +8,13 @@ Look for the last released version on clojars.org: [clj-ns-browser "1.2.0"].
 
 ## Introduction
 
+<<<<<<< HEAD
 The "it starts to look like a real app" release, "1.2.0", adds a long list of new features to clj-ns-browser compared to the legacy "1.1.0" release that is already a few weeks old. 
+=======
+```
+    :dev-dependencies [[clj-ns-browser "1.2.0"]]
+```
+>>>>>>> 369fd9d0a60242ff5326c1d864f1f5cb1b1df115
 
 One important distinction between the new and the old version, is the use of menus, popup-menus, keyboard short-cuts, copy&paste, drag&drop... all thanks to seesaw of course.
 
