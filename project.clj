@@ -14,7 +14,10 @@
  	:dev-dependencies [[lein-marginalia "0.6.0"]
  	                   ;[franks42/debug-repl "0.3.1-FS"]
                      [codox "0.5.0"]]
-  :jvm-opts ~(if (= (System/getProperty "os.name") "Mac OS X") ["-Xdock:name=Clj-NS-Browser"] [])
+  :jvm-opts ~(case (System/getProperty "os.name")
+               "Mac OS X" ["-Xdock:name=Clj-NS-Browser"]
+               "Linux" ["-Dawt.useSystemAAFontSettings=on"]
+               [])
   :java-source-paths ["src"]
   :java-source-path "src"
   :main clj-ns-browser.core)
