@@ -72,7 +72,7 @@ public class BrowserForm extends JPanel {
 		JMenuItem mntmUpdateOfflineRepo = new JMenuItem("Update offline repo");
 		mntmUpdateOfflineRepo.setName("update-offline-repo-btn");
 		popupMenu.add(mntmUpdateOfflineRepo);
-		setLayout(new MigLayout("", "[][][][][][grow]", "[][][][grow][]"));
+		setLayout(new MigLayout("", "[][][][][][][grow]", "[][][][grow][]"));
 		
 		JLabel lblNamespace = new JLabel("Namespaces");
 		lblNamespace.setName("ns-header-lbl");
