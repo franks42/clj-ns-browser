@@ -87,7 +87,7 @@ public class BrowserForm extends JPanel {
 		JLabel lblDocumentation = new JLabel("Documentation");
 		lblDocumentation.setName("doc-header-lbl");
 		lblDocumentation.setFont(new Font("Lucida Grande", Font.BOLD, 15));
-		add(lblDocumentation, "cell 5 0 2 1,alignx center");
+		add(lblDocumentation, "cell 6 0 2 1,alignx center");
 		
 		JComboBox comboBox_1 = new JComboBox();
 		comboBox_1.setName("ns-cbx");
@@ -98,24 +98,6 @@ public class BrowserForm extends JPanel {
 		comboBox.setModel(new DefaultComboBoxModel(new String[] {"publics", "privates", "interns", "interns-macro", "interns-defn", "interns-protocol", "interns-protocol-fn", "interns-var-multimethod", "interns-var-traced", "refers", "refers w/o core", "imports", "map", "map-deftype", "map-defrecord", "aliases", "special-forms"}));
 		comboBox.setName("vars-cbx");
 		add(comboBox, "cell 3 1");
-		
-		JScrollPane docScrollPane = new JScrollPane();
-		docScrollPane.setName("doc-lb-sp");
-		add(docScrollPane, "cell 5 1 2 1");
-		
-		JList docList = new JList();
-		docScrollPane.setViewportView(docList);
-		docList.setName("doc-lb");
-		//docList.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Examples", "See alsos", "Comments", "Source", "Value"}));
-		docList.setModel(new AbstractListModel() {
-			String[] values = new String[] {"Doc", "Source", "Examples", "Comments", "See alsos", "Value"};
-			public int getSize() {
-				return values.length;
-			}
-			public Object getElementAt(int index) {
-				return values[index];
-			}
-		});
 		
 		txtNsFilter = new JTextField();
 		txtNsFilter.setName("ns-filter-tf");
@@ -134,7 +116,7 @@ public class BrowserForm extends JPanel {
 		txtClojurecoremap.setName("doc-tf");
 		txtClojurecoremap.setEditable(false);
 		txtClojurecoremap.setText("clojure.core/map");
-		add(txtClojurecoremap, "cell 5 2 2 1,growx");
+		add(txtClojurecoremap, "cell 6 2 2 1,growx");
 		txtClojurecoremap.setColumns(10);
 		
 		JScrollPane scrollPane = new JScrollPane();
@@ -175,9 +157,27 @@ public class BrowserForm extends JPanel {
 		list_1.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list_1.setName("vars-lb");
 		
+		JScrollPane docScrollPane = new JScrollPane();
+		docScrollPane.setName("doc-lb-sp");
+		add(docScrollPane, "cell 5 3 1 1,aligny top");
+		
+		JList docList = new JList();
+		docScrollPane.setViewportView(docList);
+		docList.setName("doc-lb");
+		//docList.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Examples", "See alsos", "Comments", "Source", "Value"}));
+		docList.setModel(new AbstractListModel() {
+			String[] values = new String[] {"Doc", "Source", "Examples", "Comments", "See alsos", "Value"};
+			public int getSize() {
+				return values.length;
+			}
+			public Object getElementAt(int index) {
+				return values[index];
+			}
+		});
+		
 		JScrollPane scrollPane_2 = new JScrollPane();
 		scrollPane_2.setName("doc-ta-sp");
-		add(scrollPane_2, "cell 5 3 3 1,grow");
+		add(scrollPane_2, "cell 6 3 3 1,grow");
 		
 		JTextArea txtrDocArea = new JTextArea();
 		scrollPane_2.setViewportView(txtrDocArea);
@@ -206,15 +206,15 @@ public class BrowserForm extends JPanel {
 		
 		JButton btnInspect = new JButton("Inspect Coll");
 		btnInspect.setName("inspect-btn");
-		add(btnInspect, "flowx,cell 5 4,alignx right");
+		add(btnInspect, "flowx,cell 6 4,alignx right");
 		
 		JButton btnEdit = new JButton("Edit");
 		btnEdit.setName("edit-btn");
-		add(btnEdit, "flowx,cell 6 4,alignx right");
+		add(btnEdit, "flowx,cell 7 4,alignx right");
 		
 		JButton btnBrowse = new JButton("Browse");
 		btnBrowse.setName("browse-btn");
-		add(btnBrowse, "cell 6 4,alignx right");
+		add(btnBrowse, "cell 7 4,alignx right");
 
 	}
 	private static void addPopup(Component component, final JPopupMenu popup) {
