@@ -560,7 +560,7 @@
         (if-let [s (clojuredocs-text ns-str name-str info-type)]
           (if (str/blank? s)
             ""
-            (str (str/trim-newline s) "\n"))
+            (str/trim-newline s))
           (str "Sorry no " (name info-type) " available from clojuredoc for: "
                fqn))))))
 
@@ -669,53 +669,12 @@
             )))))
 
 
-(defn render-doc-text
+(defn render-one-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt]
   (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt))
     (let [is-ns? (find-ns (symbol fqn))]
       (case doc-opt
-        ;; quick to write, if a little inefficient
-        "All" (if is-ns?
-                (str (render-doc-text fqn "Doc")
-                     "\n\nSource:\n"
-                     (render-doc-text fqn "Source"))
-                (str (render-doc-text fqn "Doc")
-                     "\n\n"
-                     (let [s (render-doc-text fqn "Examples")]
-                       (if (or (nil? s)(= s ""))
-                         ""
-                         (str "\nEXAMPLES:\n" s)))
-                     (let [s (render-doc-text fqn "See alsos")]
-                       (if (or (nil? s)(= s ""))
-                         ""
-                         (str "\nSEE ALSO:\n" s)))
-                     (let [s (render-doc-text fqn "Comments")]
-                       (if (or (nil? s)(= s ""))
-                         ""
-                         (str "\nCOMMENTS:\n" s)))
-                     "\n"
-                     (render-doc-text fqn "Value")
-                     (let [s (render-meta fqn)]
-                       (if (or (nil? s)(= s ""))
-                         ""
-                         (str "\nMETA:\n" s)))
-                     (let [v (resolve-fqname fqn)]
-                      (if-let [v? (var? v)]
-                       (let [s (render-meta @v)]
-                         (if (or (nil? s)(= s ""))
-                           ""
-                           (str "\n@META:\n" s)))))
-                     "\nSOURCE:\n"
-                     (render-doc-text fqn "Source")))
-        "Doc&Source" (if is-ns?
-                (str (render-doc-text fqn "Doc")
-                     "\n\nSource:\n"
-                     (render-doc-text fqn "Source"))
-                (str (render-doc-text fqn "Doc")
-                     "\n\n"
-                     "\nSOURCE:\n\n"
-                     (render-doc-text fqn "Source")))
         "Doc"
         (let [m (if (= fqn "clojure.core//")
                   {:title "clojure.core//   -   Function",
@@ -746,6 +705,32 @@
                          (str "\n@META:\n" s)
                            ""))))
         (str "Internal error - clj-ns-browser.utils/render-doc-text got unknown doc-opt='" doc-opt "'")))))
+
+
+(defn render-doc-text
+  "Given a FQN, return the doc or source code as string, based on options."
+  [fqn doc-opt-lst]
+  (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt-lst))
+    (let [is-ns? (find-ns (symbol fqn))]
+      (if (= 1 (count doc-opt-lst))
+        (render-one-doc-text fqn (first doc-opt-lst))
+        (let [headings {"Doc" ""
+                        "Source" "SOURCE:"
+                        "Examples" "EXAMPLES:"
+                        "Comments" "COMMENTS:"
+                        "See alsos" "SEE ALSO:"
+                        "Value" ""
+                        "Meta" ""}
+              doc-lst (->> doc-opt-lst
+                           (map (fn [doc-opt]
+                                  {:doc-opt doc-opt
+                                   :doc (str/trim-newline (render-one-doc-text fqn doc-opt))
+                                   :heading (headings doc-opt)}))
+                           (remove #(or (nil? (:doc %)) (str/blank? (:doc %))))
+                           (map #(if (str/blank? (:heading %))
+                                   (:doc %)
+                                   (str (:heading %) "\n" (:doc %)))))]
+          (str/join "\n\n\n" doc-lst))))))
 
 
 (defn clojuredocs-url
