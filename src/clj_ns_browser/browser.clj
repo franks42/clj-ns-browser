@@ -204,8 +204,8 @@
                                               :special-forms ns-special-forms %1 %2 %3)
                             })
 
-(def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
-                         "Comments" "See alsos" "Value" "Meta"])
+(def doc-lb-value-list ["Doc" "Source" "Examples"
+                        "Comments" "See alsos" "Value" "Meta"])
 
 (def all-buttons-with-atoms
   "Used to auto-generate atoms and '-atom' keywords"
@@ -594,7 +594,7 @@
     (config! (id :ns-lb) :selection-mode :multi-interval) ;; experimental...
     (config! (id :vars-lb) :model [])
     (config! (id :ns-entries-lbl) :text "0")
-    (config! (id :doc-cbx) :model doc-cbx-value-list)
+    (config! (id :doc-lb) :model doc-lb-value-list)
     (config! (id :edit-btn) :enabled? false)
     (config! (id :browse-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
@@ -625,7 +625,7 @@
     (config! (id :doc-ta) :text "                                                                        ")
     (selection! (id :ns-cbx) "loaded")
     (selection! (id :vars-cbx) "Vars - public")
-    (selection! (id :doc-cbx) "Doc")))
+    (selection! (id :doc-lb) "Doc")))
 
 
 (defn init-after-bind
@@ -659,7 +659,7 @@
          ))
      (selection! (id :ns-cbx) "loaded")
      (selection! (id :vars-cbx) "Vars - public")
-     (selection! (id :doc-cbx) "Doc"))))
+     (selection! (id :doc-lb) "Doc"))))
 
 
 (defn bind-all
@@ -871,18 +871,23 @@
         (b/notify-soon)
         (b/property (id :vars-filter-tf) :background)))
     ;;
-    ;; updated fqn in doc-tf or doc-cbx =>
+    ;; updated fqn in doc-tf or doc-lb =>
     ;; new render-doc-text in doc-ta
     (b/bind
       ;; As the text of the fqn text field changes ...
-      (apply b/funnel [(id :doc-tf) (id :doc-cbx) vars-lb-refresh-atom])
-      (b/filter (fn [[doc-tf doc-cbx]]
+      (apply b/funnel [(id :doc-tf)
+                       (b/selection (id :doc-lb) {:multi? true})
+                       vars-lb-refresh-atom])
+      (b/filter (fn [[doc-tf doc-lb]]
+;;                  (printf "(class doc-lb)=%s doc-lb='%s'\n"
+;;                          (class doc-lb) (seq doc-lb))
+;;                  (flush)
                   (not (or (nil? doc-tf)  (= "" doc-tf)
-                           (nil? doc-cbx) (= "" doc-cbx)))))
+                           (nil? doc-lb) (= "" doc-lb)))))
       (b/transform
-        (fn [[doc-tf doc-cbx]]
+        (fn [[doc-tf doc-lb]]
           (future
-            (let [s (render-doc-text doc-tf doc-cbx)]
+            (let [s (render-doc-text doc-tf doc-lb)]
               (when-not (= s (config (id :doc-ta) :text))
                 (invoke-soon (config! (id :doc-ta) :text s))))))))
     ;;
@@ -917,7 +922,7 @@
     ;; new text in doc-ta => dis/enable browser button
     (b/bind
       (id :doc-ta)
-      (b/transform (fn [o] (selection (id :doc-cbx))))
+      (b/transform (fn [o] (selection (id :doc-lb))))
       (b/transform (fn [o]
         (case o
           ("Examples" "See alsos" "Comments")
@@ -931,9 +936,15 @@
           (invoke-soon (config! (id :browse-btn) :enabled? true))))))
     ;;
     (b/bind
-      (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
-      (b/transform (fn [o] (selection (id :doc-cbx))))
-      (b/transform (fn [o] (if (get #{"Source" "All"} o) true false)))
+      (apply b/funnel [(id :doc-tf)
+                       (b/selection (id :doc-lb) {:multi? true})])
+      ;;(b/transform (fn [o] (selection (id :doc-lb))))
+      (b/transform (fn [o]
+;;                     (printf "update edit-btn: (class o)=%s o='%s'\n"
+;;                             (class o) (seq o))
+;;                     (flush)
+                     (let [doc-set (set o)]
+                       (or (doc-set "Source") (doc-set "All")))))
       (b/transform (fn [o]
         (when o (if (meta-when-file (config (id :doc-tf) :text))
                   true
@@ -944,10 +955,14 @@
     ;; browser-btn pressed =>
     ;;
     (b/bind
-      (apply b/funnel [(id :doc-tf) (id :doc-cbx)])
-      (b/transform (fn [[doc-tf doc-cbx]] [(config (id :doc-tf) :text) (selection (id :doc-cbx))]))
-      (b/transform (fn [[fqn doc-cbx-sel]]
-                     (if (get #{"Value" "All"} doc-cbx-sel) fqn false)))
+      (apply b/funnel [(id :doc-tf)
+                       (b/selection (id :doc-lb) {:multi? true})])
+      (b/transform (fn [[doc-tf doc-lb]] [(config (id :doc-tf) :text) doc-lb]))
+      (b/transform (fn [[fqn doc-lb-sel]]
+                     (let [doc-set (set doc-lb-sel)]
+                       (if (or (doc-set "Value") (doc-set "All"))
+                         fqn
+                         false))))
       (b/transform (fn [fqn]
         (when fqn
           (when-let [val (resolve-fqname fqn)]
@@ -960,7 +975,7 @@
       (id :browse-btn-atom)
       (b/notify-soon)
       (b/transform (fn [& oo]
-        (let [o (selection (id :doc-cbx))]
+        (let [o (selection (id :doc-lb))]
           (when-let [fqn (config (id :doc-tf) :text)]
             (future
               (case o
