@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>clj-ns-browser</groupId>
   <artifactId>clj-ns-browser</artifactId>
-  <version>1.2.0</version>
+  <version>1.3.0-SNAPSHOT</version>
   <name>clj-ns-browser</name>
   <description>Smalltalk-like namespace/class/var/function browser for Clojure.</description>
   <url>https://github.com/franks42/clj-ns-browser</url>
@@ -17,7 +17,7 @@
   <scm>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>789a6de4ae5923f739a3e7af1ad05e529b516735</tag>
+    <tag>8a17d412e55bb99a331db2305aeb1ae8f4a9e80b</tag>
     <url>https://github.com/franks42/clj-ns-browser</url>
   </scm>
   <build>

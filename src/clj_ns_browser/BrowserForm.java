@@ -102,7 +102,7 @@ public class BrowserForm extends JPanel {
 		
 		JComboBox comboBox_2 = new JComboBox();
 		comboBox_2.setName("doc-cbx");
-		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Examples", "See alsos", "Comments", "Source", "Value"}));
+		comboBox_2.setModel(new DefaultComboBoxModel(new String[] {"All", "Doc", "Doc&Source", "Examples", "See alsos", "Comments", "Source", "Value"}));
 		add(comboBox_2, "cell 5 1 2 1");
 		
 		txtNsFilter = new JTextField();

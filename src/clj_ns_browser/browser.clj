@@ -204,7 +204,7 @@
                                               :special-forms ns-special-forms %1 %2 %3)
                             })
 
-(def doc-cbx-value-list ["All" "Doc" "Source" "Examples"
+(def doc-cbx-value-list ["All" "Doc" "Doc&Source" "Source" "Examples"
                          "Comments" "See alsos" "Value" "Meta"])
 
 (def all-buttons-with-atoms

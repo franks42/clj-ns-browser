@@ -741,6 +741,14 @@
                            (str "\n@META:\n" s)))))
                      "\nSOURCE:\n"
                      (render-doc-text fqn "Source")))
+        "Doc&Source" (if is-ns?
+                (str (render-doc-text fqn "Doc")
+                     "\n\nSource:\n"
+                     (render-doc-text fqn "Source"))
+                (str (render-doc-text fqn "Doc")
+                     "\n\n"
+                     "\nSOURCE:\n\n"
+                     (render-doc-text fqn "Source")))
         "Doc"
         (let [m (if (= fqn "clojure.core//")
                   {:title "clojure.core//   -   Function",
