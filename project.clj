@@ -10,6 +10,7 @@
                  [hiccup "0.3.8"]
                  [org.clojure/tools.trace "0.7.3"]
                  [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
+                 [org.fife.ui/rsyntaxtextarea "2.0.3"]
                  [org.thnetos/cd-client "0.3.4"]]
  	:dev-dependencies [[lein-marginalia "0.6.0"]
  	                   ;[franks42/debug-repl "0.3.1-FS"]

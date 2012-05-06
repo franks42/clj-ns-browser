@@ -32,6 +32,10 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JRadioButtonMenuItem;
 
+// import org.fife.ui.RSyntaxTextArea;
+import org.fife.ui.rtextarea.*;
+import org.fife.ui.rsyntaxtextarea.*;
+
 public class BrowserForm extends JPanel {
 	private JTextField txtNsFilter;
 	private JTextField txtVarsFilter;
@@ -167,7 +171,8 @@ public class BrowserForm extends JPanel {
 		scrollPane_2.setName("doc-ta-sp");
 		add(scrollPane_2, "cell 5 3 3 1,grow");
 		
-		JTextArea txtrDocArea = new JTextArea();
+// 		JTextArea txtrDocArea = new JTextArea();
+		JTextArea txtrDocArea = new RSyntaxTextArea();
 		scrollPane_2.setViewportView(txtrDocArea);
 		txtrDocArea.setEditable(false);
 		txtrDocArea.setName("doc-ta");

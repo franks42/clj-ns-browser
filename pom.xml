@@ -17,7 +17,7 @@
   <scm>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>8a17d412e55bb99a331db2305aeb1ae8f4a9e80b</tag>
+    <tag>c8706573f5dd282e0e81f0c34379c9c80a9fa1da</tag>
     <url>https://github.com/franks42/clj-ns-browser</url>
   </scm>
   <build>
@@ -97,6 +97,11 @@
           <groupId>org.clojure</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.fife.ui</groupId>
+      <artifactId>rsyntaxtextarea</artifactId>
+      <version>2.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.thnetos</groupId>
