@@ -955,6 +955,16 @@
       (b/notify-soon)
       (b/property (id :inspect-btn) :enabled?))
     ;;
+    ;; turn syntax-highlighting on/off - only on for Source
+    (b/bind
+      (b/selection (id :doc-cbx))
+      (b/transform (fn [o] 
+        (when (= (.getName (type (id :doc-ta))) "org.fife.ui.rsyntaxtextarea.RSyntaxTextArea")
+          (if (or (= "Source" o) (= "Examples" o) (= "Meta" o))
+            (.setSyntaxEditingStyle (id :doc-ta) org.fife.ui.rsyntaxtextarea.SyntaxConstants/SYNTAX_STYLE_CLOJURE) 
+;;             (.setSyntaxEditingStyle (id :doc-ta) org.fife.ui.rsyntaxtextarea.SyntaxConstants/SYNTAX_STYLE_CLOJURE))))))
+            (.setSyntaxEditingStyle (id :doc-ta) org.fife.ui.rsyntaxtextarea.SyntaxConstants/SYNTAX_STYLE_NONE))))))
+    ;;
     ;; bring up browser with url
     (b/bind
       (id :browse-btn-atom)
