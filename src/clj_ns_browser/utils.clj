@@ -295,39 +295,6 @@
     ""))
 
 
-;; following three clipboard-related functions copied from lib.sfd.clip-utils of
-;; https://github.com/francoisdevlin/devlinsf-clojure-utils/
-;; library seems a little abandoned, but the following functions just work.
-;; Kudos to Sean Devlin.
-
-(defn- get-sys-clip
-  "A helper fn to get the clipboard object"
-  []
-  (. (java.awt.Toolkit/getDefaultToolkit) getSystemClipboard))
-
-(defn get-clip
-  "Get the contents of the clipboard.  Currently only supports text."
-  []
-  (let [clipboard (get-sys-clip)]
-    (if clipboard
-      (let [contents (. clipboard getContents nil)]
-	(cond
-	 (nil? contents) nil
-	 (not (. contents isDataFlavorSupported java.awt.datatransfer.DataFlavor/stringFlavor)) nil
-	 true (. contents getTransferData java.awt.datatransfer.DataFlavor/stringFlavor))))))
-
-(defn set-clip!
-  "Set the contents of the clipboard.  Currently only supports text."
-  [input-string]
-  (if input-string
-    (let [clipboard (get-sys-clip)]
-      (if clipboard
-	(do
-	  (let [selection (java.awt.datatransfer.StringSelection. input-string)]
-	    (. clipboard setContents selection nil))
-	  input-string)))))
-
-
 ;; functions to collect different (filtered/sub-) lists of vars, classes, special-forms, etc.
 
 (defn ns-special-forms 

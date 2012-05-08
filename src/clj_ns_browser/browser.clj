@@ -10,6 +10,7 @@
   (:require [seesaw.selector]
             [seesaw.dnd]
             [seesaw.bind :as b]
+            [seesaw.rsyntax]
             [clojure.java.browse]
             [clojure.java.shell]
             [clojure.java.io]
@@ -18,6 +19,7 @@
             [clj-info.doc2map :as d2m]
             [clj-ns-browser.inspector]
             [seesaw.meta]
+            [seesaw.clipboard]
             [clojure.java.javadoc]
             [cd-client.core]
             [clojure.tools.trace])
@@ -433,14 +435,14 @@
             (let [id (partial select-id (to-root e))]
               (if-let [s (selection (id :doc-ta))]
                 (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
-                  (set-clip! fqn))
+                  (seesaw.clipboard/contents! fqn))
                 (if-let [fqn (config (id :doc-tf) :text)]
-                  (set-clip! fqn)))))))
+                  (seesaw.clipboard/contents! fqn)))))))
                   
 (add-app-action :fqn-from-clipboard-action
   (action :name "Paste - FQN from clipboard"
           :key  "menu V"
-          :handler (fn [e] (if-let [fqn (get-clip)] (invoke-soon (browser-with-fqn *ns* fqn (to-root e)))))))
+          :handler (fn [e] (if-let [fqn (seesaw.clipboard/contents)] (invoke-soon (browser-with-fqn *ns* fqn (to-root e)))))))
           
 (add-app-action :fqn-from-selection-action
   (action :name "FQN from selection"
@@ -961,9 +963,8 @@
       (b/transform (fn [o] 
         (when (= (.getName (type (id :doc-ta))) "org.fife.ui.rsyntaxtextarea.RSyntaxTextArea")
           (if (or (= "Source" o) (= "Examples" o) (= "Meta" o))
-            (.setSyntaxEditingStyle (id :doc-ta) org.fife.ui.rsyntaxtextarea.SyntaxConstants/SYNTAX_STYLE_CLOJURE) 
-;;             (.setSyntaxEditingStyle (id :doc-ta) org.fife.ui.rsyntaxtextarea.SyntaxConstants/SYNTAX_STYLE_CLOJURE))))))
-            (.setSyntaxEditingStyle (id :doc-ta) org.fife.ui.rsyntaxtextarea.SyntaxConstants/SYNTAX_STYLE_NONE))))))
+            (config! (id :doc-ta) :syntax :clojure)
+            (config! (id :doc-ta) :syntax :none))))))
     ;;
     ;; bring up browser with url
     (b/bind
