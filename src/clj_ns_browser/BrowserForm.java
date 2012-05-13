@@ -105,7 +105,7 @@ public class BrowserForm extends JPanel {
 		
 		JScrollPane docScrollPane = new JScrollPane();
 		docScrollPane.setName("doc-lb-sp");
-		add(docScrollPane, "cell 5 1 2 1");
+		add(docScrollPane, "cell 5 1 2 1,growx");
 		
 		JList docList = new JList();
 		docScrollPane.setViewportView(docList);
@@ -120,6 +120,8 @@ public class BrowserForm extends JPanel {
 				return values[index];
 			}
 		});
+		docList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+		docList.setVisibleRowCount(-1);
 		
 		txtNsFilter = new JTextField();
 		txtNsFilter.setName("ns-filter-tf");
