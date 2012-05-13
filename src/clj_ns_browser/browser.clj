@@ -128,17 +128,19 @@
   Output: reference to widget with :id equal to ss-id
   Usage: (select-id root :ns-lb))
   or use with partial like: (letfn [(id [kw] (select-id root kw))] (config (id :ns-lb) ...))"
-  [root ss-id]
-  (let [str-id (if (keyword? ss-id) (name ss-id) (str ss-id))]
+  ([ss-id] (select-id nil ss-id))
+  ([root ss-id]
+  (let [str-id (if (keyword? ss-id) (name ss-id) (str ss-id))
+        kw-id (keyword str-id)]
     (or
-      ;; first look in the root's tree for a widget with that :id of ss-id
-      (seesaw.core/select root [ (keyword (str "#" str-id)) ])
+      ;; first look in the global app-action-map for a matching action
+      (when-let [actn (get @app-action-map kw-id)] actn)
+      ;; then look in the root's tree for a widget with that :id of ss-id
+      (when root (seesaw.core/select root [ (keyword (str "#" str-id)) ]))
       ;; next look in the root's atom-map for a matching root-specific atom
-      (when-let [m (seesaw.meta/get-meta root :atom-map)]
-        (get m (keyword str-id)))
-      ;; last look in the global app-action-map for a matching action
-      (when-let [actn (get @app-action-map (keyword str-id))] actn)
-      (do (println "id not found: " ss-id ) nil))))
+      (when root (when-let [m (seesaw.meta/get-meta root :atom-map)]
+        (get m kw-id)))
+      (do (println "id not found: " ss-id ) nil)))))
 
 
 ;; app specific constants
@@ -1243,6 +1245,11 @@
     (swap! browser-root-frm-map (fn [a] (assoc @browser-root-frm-map (config root :id) root)))
     (config! root :transfer-handler (seesaw.dnd/default-transfer-handler
       :import [seesaw.dnd/string-flavor (fn [{:keys [data]}] (browser-with-fqn nil data root))]))
+    (config! (select-id (get-clj-ns-browser) :vars-lb) 
+        :drag-enabled? true
+        :transfer-handler (seesaw.dnd/default-transfer-handler :export 
+          { :actions (fn [_] :copy) 
+            :start   (fn [w] [seesaw.dnd/string-flavor (seesaw.core/selection w)]) }))
     (listen root :component-hidden 
       (fn [e] (when (every? (fn [f] (not (config f :visible?))) @browser-root-frms) 
         (refresh-clj-ns-browser root)
