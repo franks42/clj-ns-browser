@@ -853,3 +853,38 @@ any code."
   ;; TBD: What is most reliable way to print settings so it can be
   ;; read back in with read-safely?
   (spit (settings-filename) (with-out-str (clojure.pprint/pprint settings))))
+
+
+(defn list-with-elem-at-index
+  "Given a sequence cur-order and elem-to-move is one of the items
+within it, return a vector that has all of the elements in the same
+order, except that elem-to-move has been moved to just before the
+index new-idx.
+
+Examples:
+user=> (def l [\"a\" \"b\" \"c\" \"d\"])
+user=> (list-with-elem-at-index l \"b\" 0)
+[\"b\" \"a\" \"c\" \"d\"]
+user=> (list-with-elem-at-index l \"b\" 1)
+[\"a\" \"b\" \"c\" \"d\"]
+user=> (list-with-elem-at-index l \"b\" 2)
+[\"a\" \"b\" \"c\" \"d\"]
+user=> (list-with-elem-at-index l \"b\" 3)
+[\"a\" \"c\" \"b\" \"d\"]
+user=> (list-with-elem-at-index l \"b\" 4)
+[\"a\" \"c\" \"d\" \"b\"]"
+  [cur-order elem-to-move new-idx]
+  (let [cur-order (vec cur-order)
+        cur-idx (.indexOf cur-order elem-to-move)]
+    (if (= new-idx cur-idx)
+      cur-order
+      (if (< new-idx cur-idx)
+        (vec (concat (subvec cur-order 0 new-idx)
+                     [ elem-to-move ]
+                     (subvec cur-order new-idx cur-idx)
+                     (subvec cur-order (inc cur-idx))))
+        ;; else new-idx > cur-idx
+        (vec (concat (subvec cur-order 0 cur-idx)
+                     (subvec cur-order (inc cur-idx) new-idx)
+                     [ elem-to-move ]
+                     (subvec cur-order new-idx)))))))
