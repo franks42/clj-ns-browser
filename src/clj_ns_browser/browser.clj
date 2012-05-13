@@ -206,6 +206,9 @@
 
 (def doc-lb-value-list ["Doc" "Source" "Examples"
                         "Comments" "See alsos" "Value" "Meta"])
+(def doc-lb-value-set (set doc-lb-value-list))
+(def doc-lb-cur-order (atom doc-lb-value-list))
+
 
 (def all-buttons-with-atoms
   "Used to auto-generate atoms and '-atom' keywords"
@@ -594,7 +597,27 @@
     (config! (id :ns-lb) :selection-mode :multi-interval) ;; experimental...
     (config! (id :vars-lb) :model [])
     (config! (id :ns-entries-lbl) :text "0")
-    (config! (id :doc-lb) :model doc-lb-value-list)
+    (config! (id :doc-lb)
+             :model doc-lb-value-list
+             :drag-enabled? true
+             :drop-mode :insert
+             :transfer-handler
+             (seesaw.dnd/default-transfer-handler
+               :import [seesaw.dnd/string-flavor
+                        (fn [{:keys [target data drop? drop-location] :as m}]
+                          ;; Ignore anything dropped onto the list that is
+                          ;; not in the original set of list elements.
+                          (if (and drop?
+                                   (:insert? drop-location)
+                                   (:index drop-location)
+                                   (doc-lb-value-set data))
+                            (let [new-order (list-with-elem-at-index
+                                              @doc-lb-cur-order data
+                                              (:index drop-location))]
+                              (reset! doc-lb-cur-order new-order)
+                              (config! target :model new-order))))]
+               :export {:actions (constantly :copy)
+                        :start   (fn [c] [seesaw.dnd/string-flavor (selection c)])}))
     (config! (id :edit-btn) :enabled? false)
     (config! (id :browse-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
