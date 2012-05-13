@@ -15,6 +15,7 @@
             [clojure.java.shell]
             [clojure.java.io]
             [clojure.pprint]
+            [clojure.set :as set]
             [clojure.string :as str]
             [clj-info.doc2map :as d2m]
             [clj-ns-browser.inspector]
@@ -999,12 +1000,15 @@
     ;;
     ;; turn syntax-highlighting on/off - only on for Source
     (b/bind
-      (b/selection (id :doc-cbx))
+      (b/selection (id :doc-lb) {:multi? true})
       (b/transform (fn [o] 
         (when (= (.getName (type (id :doc-ta))) "org.fife.ui.rsyntaxtextarea.RSyntaxTextArea")
-          (if (or (= "Source" o) (= "Examples" o) (= "Meta" o))
-            (config! (id :doc-ta) :syntax :clojure)
-            (config! (id :doc-ta) :syntax :none))))))
+          (let [selected-set (set o)]
+            (if (= selected-set
+                   (set/intersection selected-set
+                                     #{"Source" "Examples" "Meta"}))
+              (config! (id :doc-ta) :syntax :clojure)
+              (config! (id :doc-ta) :syntax :none)))))))
     ;;
     ;; bring up browser with url
     (b/bind
