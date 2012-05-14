@@ -18,4 +18,5 @@
   :jvm-opts ~(if (= (System/getProperty "os.name") "Mac OS X") ["-Xdock:name=Clj-NS-Browser"] [])
   :java-source-paths ["src"]
   :java-source-path "src"
+  :resource-paths ["resource"]
   :main clj-ns-browser.core)
