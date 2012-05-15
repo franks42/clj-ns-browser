@@ -214,26 +214,26 @@
 ;; in the doc-lb listbox.
 (def name-to-icon-descriptions
   {"Doc"
-   {:icon-unselected (str (io/resource "icon-doc.png")),
-    :icon-selected (str (io/resource "icon-doc-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-doc-120x24.png")),
+    :icon-selected (str (io/resource "icon-doc-selected-120x24.png"))}
    "Source"
-   {:icon-unselected (str (io/resource "icon-source.png")),
-    :icon-selected (str (io/resource "icon-source-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-source-120x24.png")),
+    :icon-selected (str (io/resource "icon-source-selected-120x24.png"))}
    "Examples"
-   {:icon-unselected (str (io/resource "icon-examples.png")),
-    :icon-selected (str (io/resource "icon-examples-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-examples-120x24.png")),
+    :icon-selected (str (io/resource "icon-examples-selected-120x24.png"))}
    "Comments"
-   {:icon-unselected (str (io/resource "icon-comments.png")),
-    :icon-selected (str (io/resource "icon-comments-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-comments-120x24.png")),
+    :icon-selected (str (io/resource "icon-comments-selected-120x24.png"))}
    "See alsos"
-   {:icon-unselected (str (io/resource "icon-see-also.png")),
-    :icon-selected (str (io/resource "icon-see-also-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-see-also-120x24.png")),
+    :icon-selected (str (io/resource "icon-see-also-selected-120x24.png"))}
    "Value"
-   {:icon-unselected (str (io/resource "icon-value.png")),
-    :icon-selected (str (io/resource "icon-value-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-value-120x24.png")),
+    :icon-selected (str (io/resource "icon-value-selected-120x24.png"))}
    "Meta"
-   {:icon-unselected (str (io/resource "icon-meta.png")),
-    :icon-selected (str (io/resource "icon-meta-selected-90x24.png"))}
+   {:icon-unselected (str (io/resource "icon-meta-120x24.png")),
+    :icon-selected (str (io/resource "icon-meta-selected-120x24.png"))}
    })
 
 (defn update-vals-in-map [m f]
