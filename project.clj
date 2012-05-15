@@ -21,5 +21,5 @@
   ;; Use this for Leiningen version 1
   :resources-path "resource"
   ;; Use this for Leiningen version 2
-;;  :resource-paths ["resource"]
+  :resource-paths ["resource"]
   :main clj-ns-browser.core)
