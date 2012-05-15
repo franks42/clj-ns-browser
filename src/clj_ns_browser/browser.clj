@@ -13,7 +13,7 @@
             [seesaw.rsyntax]
             [clojure.java.browse]
             [clojure.java.shell]
-            [clojure.java.io]
+            [clojure.java.io :as io]
             [clojure.pprint]
             [clojure.set :as set]
             [clojure.string :as str]
@@ -209,51 +209,50 @@
                                               :special-forms ns-special-forms %1 %2 %3)
                             })
 
-;; Create maps from names of doc-lb entries to files containing icon
-;; images, and the other direction (to efficiently map selections back
-;; to names, which are used everywhere else in the code).
 
-;;(def icon-dir "file:/Users/jafinger/clj/clj-ns-browser/resources/")
-;;
-;;(def name-to-icon-desc
-;;  {"Doc" (str icon-dir "icon-doc.png"),
-;;   "Source" (str icon-dir "icon-source.png"),
-;;   "Examples" (str icon-dir "icon-examples.png"),
-;;   "Comments" (str icon-dir "icon-comments.png"),
-;;   "See alsos" (str icon-dir "icon-see-also.png"),
-;;   "Value" (str icon-dir "icon-value.png"),
-;;   "Meta" (str icon-dir "icon-meta.png")})
-
-(def name-to-icon-desc
-  {"Doc" (str (clojure.java.io/resource "icon-doc.png")),
-   "Source" (str (clojure.java.io/resource "icon-source.png")),
-   "Examples" (str (clojure.java.io/resource "icon-examples.png")),
-   "Comments" (str (clojure.java.io/resource "icon-comments.png")),
-   "See alsos" (str (clojure.java.io/resource "icon-see-also.png")),
-   "Value" (str (clojure.java.io/resource "icon-value.png")),
-   "Meta" (str (clojure.java.io/resource "icon-meta.png"))})
+;; Icons to display when the corresponding strings are selected or not
+;; in the doc-lb listbox.
+(def name-to-icon-descriptions
+  {"Doc"
+   {:icon-unselected (str (io/resource "icon-doc.png")),
+    :icon-selected (str (io/resource "icon-doc-selected-90x24.png"))}
+   "Source"
+   {:icon-unselected (str (io/resource "icon-source.png")),
+    :icon-selected (str (io/resource "icon-source-selected-90x24.png"))}
+   "Examples"
+   {:icon-unselected (str (io/resource "icon-examples.png")),
+    :icon-selected (str (io/resource "icon-examples-selected-90x24.png"))}
+   "Comments"
+   {:icon-unselected (str (io/resource "icon-comments.png")),
+    :icon-selected (str (io/resource "icon-comments-selected-90x24.png"))}
+   "See alsos"
+   {:icon-unselected (str (io/resource "icon-see-also.png")),
+    :icon-selected (str (io/resource "icon-see-also-selected-90x24.png"))}
+   "Value"
+   {:icon-unselected (str (io/resource "icon-value.png")),
+    :icon-selected (str (io/resource "icon-value-selected-90x24.png"))}
+   "Meta"
+   {:icon-unselected (str (io/resource "icon-meta.png")),
+    :icon-selected (str (io/resource "icon-meta-selected-90x24.png"))}
+   })
 
 (defn update-vals-in-map [m f]
   (reduce (fn [m [k v]]
             (assoc m k (f v)))
           m m))
 
-(def name-to-icon (update-vals-in-map name-to-icon-desc icon))
+(def name-to-selected-icon
+  (update-vals-in-map name-to-icon-descriptions
+                      (fn [v] (icon (:icon-selected v)))))
 
-(def icon-desc-to-name (set/map-invert name-to-icon-desc))
+(def name-to-unselected-icon
+  (update-vals-in-map name-to-icon-descriptions
+                      (fn [v] (icon (:icon-unselected v)))))
 
-(defn icon-to-name [i]
-  (icon-desc-to-name (str i)))
-
-(def doc-lb-name-list ["Doc" "Source" "Examples"
+(def doc-lb-value-list ["Doc" "Source" "Examples"
                         "Comments" "See alsos" "Value" "Meta"])
-(def doc-lb-value-list (map name-to-icon doc-lb-name-list))
 (def doc-lb-value-set (set doc-lb-value-list))
 (def doc-lb-cur-order (atom doc-lb-value-list))
-
-;; Needed for handling drag and drop to reorder items in the doc-lb
-;; listbox.
-(def icon-flavor (seesaw.dnd/local-object-flavor javax.swing.ImageIcon))
 
 
 (def all-buttons-with-atoms
@@ -290,7 +289,7 @@
 
 (defn clojuredocs-offline-mode! []
   (let [f (clojuredocs-snapshot-filename)]
-    (if (.exists (clojure.java.io/as-file f))
+    (if (.exists (io/as-file f))
       ;; TBD: Consider trying to handle errors while reading the file.
       (let [s (with-out-str (cd-client.core/set-local-mode! f))]
         [:ok s])
@@ -630,6 +629,14 @@
 
 ;; Init functions called during construction of a frame with its widget hierarchy
 
+(defn render-doc-lb-item [renderer info]
+  (let [{:keys [value selected?]} info]
+    (config! renderer
+             :icon (if selected?
+                     (name-to-selected-icon value)
+                     (name-to-unselected-icon value))
+             :text "")))
+
 (defn init-before-bind
   [root]
   (letfn [(id [kw] (select-id root kw))]
@@ -645,11 +652,12 @@
     (config! (id :ns-entries-lbl) :text "0")
     (config! (id :doc-lb)
              :model doc-lb-value-list
+             :renderer render-doc-lb-item
              :drag-enabled? true
              :drop-mode :insert
              :transfer-handler
              (seesaw.dnd/default-transfer-handler
-               :import [icon-flavor
+               :import [seesaw.dnd/string-flavor
                         (fn [{:keys [target data drop? drop-location] :as m}]
                           ;; Ignore anything dropped onto the list that is
                           ;; not in the original set of list elements.
@@ -663,7 +671,8 @@
                               (reset! doc-lb-cur-order new-order)
                               (config! target :model new-order))))]
                :export {:actions (constantly :copy)
-                        :start   (fn [c] [icon-flavor (selection c)])}))
+                        :start   (fn [c] [seesaw.dnd/string-flavor
+                                          (selection c)])}))
     (config! (id :edit-btn) :enabled? false)
     (config! (id :browse-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
@@ -694,7 +703,7 @@
     (config! (id :doc-ta) :text "                                                                        ")
     (selection! (id :ns-cbx) "loaded")
     (selection! (id :vars-cbx) "Vars - public")
-    (selection! (id :doc-lb) (name-to-icon "Doc"))))
+    (selection! (id :doc-lb) "Doc")))
 
 
 (defn init-after-bind
@@ -728,7 +737,7 @@
          ))
      (selection! (id :ns-cbx) "loaded")
      (selection! (id :vars-cbx) "Vars - public")
-     (selection! (id :doc-lb) (name-to-icon "Doc")))))
+     (selection! (id :doc-lb) "Doc"))))
 
 
 (defn bind-all
@@ -950,14 +959,14 @@
       (b/filter (fn [[doc-tf doc-lb]]
 ;;                  (printf "(class doc-lb)=%s (seq doc-lb)='%s' (map ... doc-lb)='%s'\n"
 ;;                          (class doc-lb) (seq doc-lb)
-;;                          (seq (map icon-to-name doc-lb)))
+;;                          (seq doc-lb))
 ;;                  (flush)
                   (not (or (nil? doc-tf)  (= "" doc-tf)
                            (nil? doc-lb) (= "" doc-lb)))))
       (b/transform
         (fn [[doc-tf doc-lb]]
           (future
-            (let [s (render-doc-text doc-tf (map icon-to-name doc-lb))]
+            (let [s (render-doc-text doc-tf doc-lb)]
               (when-not (= s (config (id :doc-ta) :text))
                 (invoke-soon (config! (id :doc-ta) :text s))))))))
     ;;
@@ -992,8 +1001,7 @@
     ;; new text in doc-ta => dis/enable browser button
     (b/bind
       (id :doc-ta)
-      (b/transform (fn [o] (map icon-to-name
-                                (selection (id :doc-lb) {:multi? true}))))
+      (b/transform (fn [o] (selection (id :doc-lb) {:multi? true})))
       (b/transform (fn [o]
         (if (empty? (set/intersection (set o)
                                       #{"Examples" "See alsos" "Comments"}))
@@ -1013,7 +1021,7 @@
 ;;                     (printf "update edit-btn: (class o)=%s o='%s'\n"
 ;;                             (class o) (seq o))
 ;;                     (flush)
-                     (let [doc-set (set (map icon-to-name o))]
+                     (let [doc-set (set o)]
                        (or (doc-set "Source") (doc-set "All")))))
       (b/transform (fn [o]
         (when o (if (meta-when-file (config (id :doc-tf) :text))
@@ -1027,8 +1035,7 @@
     (b/bind
       (apply b/funnel [(id :doc-tf)
                        (b/selection (id :doc-lb) {:multi? true})])
-      (b/transform (fn [[doc-tf doc-lb]] [(config (id :doc-tf) :text)
-                                          (map icon-to-name doc-lb)]))
+      (b/transform (fn [[doc-tf doc-lb]] [(config (id :doc-tf) :text) doc-lb]))
       (b/transform (fn [[fqn doc-lb-sel]]
                      (let [doc-set (set doc-lb-sel)]
                        (if (or (doc-set "Value") (doc-set "All"))
@@ -1046,7 +1053,7 @@
       (b/selection (id :doc-lb) {:multi? true})
       (b/transform (fn [o] 
         (when (= (.getName (type (id :doc-ta))) "org.fife.ui.rsyntaxtextarea.RSyntaxTextArea")
-          (let [selected-set (set (map icon-to-name o))]
+          (let [selected-set (set o)]
             (if (= selected-set
                    (set/intersection selected-set
                                      #{"Source" "Examples" "Meta"}))
@@ -1058,7 +1065,7 @@
       (id :browse-btn-atom)
       (b/notify-soon)
       (b/transform (fn [& oo]
-        (let [o (icon-to-name (selection (id :doc-lb)))]
+        (let [o (selection (id :doc-lb))]
           (when-let [fqn (config (id :doc-tf) :text)]
             (future
               (case o
