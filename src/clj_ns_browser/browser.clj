@@ -7,9 +7,6 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.browser
-  (:import [java.awt Dimension]
-           [java.awt.image BufferedImage]
-           [javax.swing ImageIcon])
   (:require [seesaw.selector]
             [seesaw.dnd]
             [seesaw.bind :as b]
@@ -22,6 +19,7 @@
             [clojure.string :as str]
             [clj-info.doc2map :as d2m]
             [clj-ns-browser.inspector]
+            [clj-ns-browser.toggle-listbox :as tl]
             [seesaw.meta]
             [seesaw.clipboard]
             [clojure.java.javadoc]
@@ -215,56 +213,6 @@
 
 (def doc-lb-value-list ["Doc" "Source" "Examples"
                         "Comments" "See alsos" "Value" "Meta"])
-
-;; I learned about the trick of first calling setSize on a Swing
-;; component, in order to paint an image of it to a Graphics object
-;; without displaying it on the screen, on the following web page:
-
-;; https://forums.oracle.com/forums/thread.jspa?messageID=5697465&
-
-(defn component-icon-image [comp pref-width pref-height]
-  (let [pref-siz (Dimension. pref-width pref-height)
-        bi (BufferedImage. pref-width pref-height BufferedImage/TYPE_3BYTE_BGR)
-        gr (.getGraphics bi)]
-    (.fillRect gr 0 0 pref-width pref-height)
-    (.setSize comp pref-siz)
-    (.paint comp gr)
-    (ImageIcon. bi)))
-
-;; Icons to display when the corresponding strings are selected or not
-;; in the doc-lb listbox.
-(def doc-lb-buttons (map (fn [label]
-                           {:name label :button-obj (toggle :text label)})
-                         doc-lb-value-list))
-
-(def max-button-width (apply max (map #(-> % :button-obj .getPreferredSize
-                                           .width)
-                                      doc-lb-buttons)))
-
-(def max-button-height (apply max (map #(-> % :button-obj .getPreferredSize
-                                            .height)
-                                       doc-lb-buttons)))
-
-(def name-to-icons (into {}
-                         (map (fn [{:keys [name button-obj]}]
-                                (config! button-obj :selected? false)
-                                (let [icon-unsel (component-icon-image
-                                                  button-obj
-                                                  max-button-width
-                                                  max-button-height)]
-                                  (config! button-obj :selected? true)
-                                  (let [icon-sel (component-icon-image
-                                                  button-obj
-                                                  max-button-width
-                                                  max-button-height)]
-                                    [name {:icon-unselected icon-unsel
-                                           :icon-selected icon-sel}])))
-                              doc-lb-buttons)))
-
-(defn name-to-icon [name selected?]
-  (get-in name-to-icons [name (if selected? :icon-selected :icon-unselected)]))
-
-(def doc-lb-value-set (set doc-lb-value-list))
 (def doc-lb-cur-order (atom doc-lb-value-list))
 
 
@@ -640,13 +588,8 @@
                         (browser-with-fqn *ns* fqn root))))))))))
 
 
-;; Init functions called during construction of a frame with its widget hierarchy
-
-(defn render-doc-lb-item [renderer info]
-  (let [{:keys [value selected?]} info]
-    (config! renderer
-             :icon (name-to-icon value selected?)
-             :text "")))
+;; Init functions called during construction of a frame with its
+;; widget hierarchy
 
 (defn init-before-bind
   [root]
@@ -661,29 +604,8 @@
     (config! (id :ns-lb) :selection-mode :multi-interval) ;; experimental...
     (config! (id :vars-lb) :model [])
     (config! (id :ns-entries-lbl) :text "0")
-    (config! (id :doc-lb)
-             :model doc-lb-value-list
-             :renderer render-doc-lb-item
-             :drag-enabled? true
-             :drop-mode :insert
-             :transfer-handler
-             (seesaw.dnd/default-transfer-handler
-               :import [seesaw.dnd/string-flavor
-                        (fn [{:keys [target data drop? drop-location] :as m}]
-                          ;; Ignore anything dropped onto the list that is
-                          ;; not in the original set of list elements.
-                          (if (and drop?
-                                   (:insert? drop-location)
-                                   (:index drop-location)
-                                   (doc-lb-value-set data))
-                            (let [new-order (list-with-elem-at-index
-                                              @doc-lb-cur-order data
-                                              (:index drop-location))]
-                              (reset! doc-lb-cur-order new-order)
-                              (config! target :model new-order))))]
-               :export {:actions (constantly :copy)
-                        :start   (fn [c] [seesaw.dnd/string-flavor
-                                          (selection c)])}))
+    (tl/config-as-toggle-listbox! (id :doc-lb)
+                                  doc-lb-value-list doc-lb-cur-order)
     (config! (id :edit-btn) :enabled? false)
     (config! (id :browse-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
