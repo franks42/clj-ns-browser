@@ -36,7 +36,7 @@
 (defn config-as-toggle-listbox! [id label-strs cur-label-str-order-atom]
   (let [label-str-set (set label-strs)
         buttons (map (fn [label]
-                       {:name label
+                       {:label label
                         :button-sel (toggle :text label :selected? true)
                         :button-unsel (toggle :text label :selected? false)})
                      label-strs)
@@ -44,26 +44,24 @@
                                   buttons))
         max-height (apply max (map #(-> % :button-sel .getPreferredSize .height)
                                    buttons))
-        name-to-icons (into {}
-                            (map (fn [{:keys [name button-sel button-unsel]}]
-                                   [name
-                                    {:icon-unselected
-                                     (component-icon-image button-unsel
-                                                           max-width max-height)
-                                     :icon-selected
-                                     (component-icon-image button-sel
-                                                           max-width max-height)
-                                     }])
-                                 buttons))
+        label-to-icon-sel (into {}
+                           (map (fn [{:keys [label button-sel]}]
+                                  [label
+                                   (component-icon-image button-sel
+                                                         max-width max-height)])
+                                buttons))
+        label-to-icon-unsel (into {}
+                           (map (fn [{:keys [label button-unsel]}]
+                                  [label
+                                   (component-icon-image button-unsel
+                                                         max-width max-height)])
+                                buttons))
         render-lb-item (fn [renderer info]
-                         (let [{:keys [value selected?]} info]
-                           (config! renderer
-                                    :icon (get-in name-to-icons
-                                                  [value (if selected?
-                                                           :icon-selected
-                                                           :icon-unselected)])
-                                    :text "")))
-        ]
+                         (let [{:keys [value selected?]} info
+                               m (if selected?
+                                   label-to-icon-sel
+                                   label-to-icon-unsel)]
+                           (config! renderer :icon (m value) :text "")))]
     (reset! cur-label-str-order-atom label-strs)
     (config! id
              :model label-strs
