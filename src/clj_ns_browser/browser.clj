@@ -7,6 +7,9 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.browser
+  (:import [java.awt Dimension]
+           [java.awt.image BufferedImage]
+           [javax.swing ImageIcon])
   (:require [seesaw.selector]
             [seesaw.dnd]
             [seesaw.bind :as b]
@@ -210,47 +213,57 @@
                             })
 
 
-;; Icons to display when the corresponding strings are selected or not
-;; in the doc-lb listbox.
-(def name-to-icon-descriptions
-  {"Doc"
-   {:icon-unselected (str (io/resource "icon-doc-120x24.png")),
-    :icon-selected (str (io/resource "icon-doc-selected-120x24.png"))}
-   "Source"
-   {:icon-unselected (str (io/resource "icon-source-120x24.png")),
-    :icon-selected (str (io/resource "icon-source-selected-120x24.png"))}
-   "Examples"
-   {:icon-unselected (str (io/resource "icon-examples-120x24.png")),
-    :icon-selected (str (io/resource "icon-examples-selected-120x24.png"))}
-   "Comments"
-   {:icon-unselected (str (io/resource "icon-comments-120x24.png")),
-    :icon-selected (str (io/resource "icon-comments-selected-120x24.png"))}
-   "See alsos"
-   {:icon-unselected (str (io/resource "icon-see-also-120x24.png")),
-    :icon-selected (str (io/resource "icon-see-also-selected-120x24.png"))}
-   "Value"
-   {:icon-unselected (str (io/resource "icon-value-120x24.png")),
-    :icon-selected (str (io/resource "icon-value-selected-120x24.png"))}
-   "Meta"
-   {:icon-unselected (str (io/resource "icon-meta-120x24.png")),
-    :icon-selected (str (io/resource "icon-meta-selected-120x24.png"))}
-   })
-
-(defn update-vals-in-map [m f]
-  (reduce (fn [m [k v]]
-            (assoc m k (f v)))
-          m m))
-
-(def name-to-selected-icon
-  (update-vals-in-map name-to-icon-descriptions
-                      (fn [v] (icon (:icon-selected v)))))
-
-(def name-to-unselected-icon
-  (update-vals-in-map name-to-icon-descriptions
-                      (fn [v] (icon (:icon-unselected v)))))
-
 (def doc-lb-value-list ["Doc" "Source" "Examples"
                         "Comments" "See alsos" "Value" "Meta"])
+
+;; I learned about the trick of first calling setSize on a Swing
+;; component, in order to paint an image of it to a Graphics object
+;; without displaying it on the screen, on the following web page:
+
+;; https://forums.oracle.com/forums/thread.jspa?messageID=5697465&
+
+(defn component-icon-image [comp pref-width pref-height]
+  (let [pref-siz (Dimension. pref-width pref-height)
+        bi (BufferedImage. pref-width pref-height BufferedImage/TYPE_3BYTE_BGR)
+        gr (.getGraphics bi)]
+    (.fillRect gr 0 0 pref-width pref-height)
+    (.setSize comp pref-siz)
+    (.paint comp gr)
+    (ImageIcon. bi)))
+
+;; Icons to display when the corresponding strings are selected or not
+;; in the doc-lb listbox.
+(def doc-lb-buttons (map (fn [label]
+                           {:name label :button-obj (toggle :text label)})
+                         doc-lb-value-list))
+
+(def max-button-width (apply max (map #(-> % :button-obj .getPreferredSize
+                                           .width)
+                                      doc-lb-buttons)))
+
+(def max-button-height (apply max (map #(-> % :button-obj .getPreferredSize
+                                            .height)
+                                       doc-lb-buttons)))
+
+(def name-to-icons (into {}
+                         (map (fn [{:keys [name button-obj]}]
+                                (config! button-obj :selected? false)
+                                (let [icon-unsel (component-icon-image
+                                                  button-obj
+                                                  max-button-width
+                                                  max-button-height)]
+                                  (config! button-obj :selected? true)
+                                  (let [icon-sel (component-icon-image
+                                                  button-obj
+                                                  max-button-width
+                                                  max-button-height)]
+                                    [name {:icon-unselected icon-unsel
+                                           :icon-selected icon-sel}])))
+                              doc-lb-buttons)))
+
+(defn name-to-icon [name selected?]
+  (get-in name-to-icons [name (if selected? :icon-selected :icon-unselected)]))
+
 (def doc-lb-value-set (set doc-lb-value-list))
 (def doc-lb-cur-order (atom doc-lb-value-list))
 
@@ -632,9 +645,7 @@
 (defn render-doc-lb-item [renderer info]
   (let [{:keys [value selected?]} info]
     (config! renderer
-             :icon (if selected?
-                     (name-to-selected-icon value)
-                     (name-to-unselected-icon value))
+             :icon (name-to-icon value selected?)
              :text "")))
 
 (defn init-before-bind
