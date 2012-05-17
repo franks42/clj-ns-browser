@@ -46,7 +46,11 @@ That partial feature list should be more than enough to make you want to read th
 For any project where you want to add the ability to browse your currently loaded/unloaded namespaces for the available classes/vars/functions/macros/etc. with their docs/source/values, you should add clj-ns-browser to your :dev-dependencies list by adding to your project.clj:
 
 ```
+    ;; Leiningen version 1
     :dev-dependencies [[clj-ns-browser "1.2.0"]]
+
+    ;; Leiningen version 2
+    :profiles {:dev {:dependencies [[clj-ns-browser "1.2.0"]]}}
 ```
 
 Then fire-up your repl, refer to the sdoc macro in clj-ns-browser.sdoc, and start the browser with (sdoc):
@@ -58,7 +62,7 @@ Then fire-up your repl, refer to the sdoc macro in clj-ns-browser.sdoc, and star
 
 ... and the browser window should popup on your screen - very easy!
 
-It should actually work from any repl - tested on MacOSX, Linux, even Windows... with leiningen 1&2, repls, repl-y, emacs and Sublime Text 2.
+It should actually work from any repl - tested on MacOSX, Linux, even Windows... with Leiningen 1.7.1 & 2.0.0-preview4, repls, repl-y, emacs and Sublime Text 2.  It has failed to work with 2.0.0-preview3 for some reason we are not sure of -- perhaps a conflicting version of the cd-client being used between Leiningen and clj-ns-browser.
 
 
 ## Documentation, Usage, Issues, Futures...
