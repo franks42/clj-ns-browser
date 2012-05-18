@@ -17,7 +17,7 @@
   <scm>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>9bb4398b63e1165b5c0dc41be6c37895a185345d</tag>
+    <tag>d06ca1e87af807fe4af37382eec9cd490ff836b2</tag>
     <url>https://github.com/franks42/clj-ns-browser</url>
   </scm>
   <build>
@@ -25,7 +25,7 @@
     <testSourceDirectory>test</testSourceDirectory>
     <resources>
       <resource>
-        <directory>resources</directory>
+        <directory>resource</directory>
       </resource>
     </resources>
     <testResources>
@@ -76,11 +76,6 @@
       <groupId>clj-info</groupId>
       <artifactId>clj-info</artifactId>
       <version>0.2.3</version>
-    </dependency>
-    <dependency>
-      <groupId>hiccup</groupId>
-      <artifactId>hiccup</artifactId>
-      <version>0.3.8</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
