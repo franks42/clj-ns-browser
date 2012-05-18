@@ -239,7 +239,27 @@
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
 (def group-vars-by-object-type-atom (atom false))
-(def vars-search-doc-also-cb-atom (atom false))
+(def search-places-list
+  (atom [{:menu-item-text "Search Docs Also"
+          :menu-item-keyword :vars-search-doc-also-cb
+          :places-keyword :doc}
+         {:menu-item-text "Search Source Also"
+          :menu-item-keyword :vars-search-source-also-cb
+          :places-keyword :source}
+         {:menu-item-text "Search Examples Also"
+          :menu-item-keyword :vars-search-examples-also-cb
+          :places-keyword :examples}
+         ]))
+(reset! search-places-list
+        (map (fn [place]
+               (assoc place :checkbox-menu-item
+                      (checkbox-menu-item
+                       :text (:menu-item-text place)
+                       :id (:menu-item-keyword place))))
+             @search-places-list))
+(def vars-search-places-atom (atom (zipmap (map :places-keyword
+                                                @search-places-list)
+                                           (repeat false))))
 (def ns-lb-refresh-atom (atom true))
 (def vars-lb-refresh-atom (atom true))
 
@@ -276,22 +296,41 @@
 ;; When filtering namespaces, symbol-info is a collection of strings.
 ;; When filtering symbols within one or more namespaces, symbol-info
 ;; is a collection of maps, each having string values for the keys
-;; :name-to-search and, if (deref search-doc-strings-atom) is true,
-;; :doc-string.
+;; :name-to-search and, for each of the values of the map (deref
+;; search-places-atom) that is true, :search-places will be a map with
+;; the corresponding key having a value that is a string to search.
+;;
+;; Example: If (deref search-places-atom) is:
+;;
+;; {:doc true, :source false, :examples true}
+;;
+;; then the map for each symbol will have a key :search-places with a
+;; value like:
+;;
+;; {:doc "doc string to search for the symbol",
+;;  :examples "examples string to search for the symbol"}
+;;
+;; The map might have other keys with defined values, but need not.
 
 (defn regx-tf-filter
   "filter for use in bind that filters string-list s-l with regex of text-field t-f"
-  [symbol-info t-f search-doc-strings-atom]
-  (let [search-doc-strings? (deref search-doc-strings-atom)]
+  [symbol-info t-f search-places-atom]
+  (let [search-places (deref search-places-atom)
+        search-places-with-ks (map key (filter #(val %) search-places))]
     (when-let [r (try (re-pattern (config t-f :text))
                       (catch Exception e nil))]
       (filter (fn [info]
                 (if (string? info)
+                  ;; info is just a string containing a namespace name
                   (re-find r info)
+                  ;; info is a map with info about one Var in a namespace
                   (or (re-find r (:name-to-search info))
-                      (and search-doc-strings?
-                           (not (nil? (:doc-string info)))
-                           (re-find r (:doc-string info))))))
+                      (some identity
+                            (map (fn [place-key]
+                                   (if-let [s (get (:search-places info)
+                                                   place-key)]
+                                     (re-find r s)))
+                                 search-places-with-ks)))))
               symbol-info))))
 
 (defn ensure-selection-visible
@@ -547,10 +586,17 @@
                          (id :vars-fqn-listing-cb-action)
                          (config (id :vars-fqn-listing-cb-action) :selected?)))))))
 
-(defn update-vars-search-doc-also [cb-action-id new-val]
-  (reset! vars-search-doc-also-cb-atom new-val)
-  (config! cb-action-id :selected? new-val)
-  (update-settings! {:vars-search-doc-also new-val}))
+(defn update-search-places [new-val-map]
+  (reset! vars-search-places-atom new-val-map)
+  ;; This function will probably most often be called as a result of
+  ;; changing one of the settings for where to search.  Go ahead and
+  ;; update all of the checkbox menu items here, to avoid the hassle
+  ;; of only changing the ones that need changing.
+  (doseq [place @search-places-list]
+    (let [cb-item (:checkbox-menu-item place)
+          place-key (:places-keyword place)]
+      (config! cb-item :selected? (get new-val-map place-key))))
+  (update-settings! {:search-places new-val-map}))
 
 
 (add-app-action :vars-unmap-btn-action
@@ -665,8 +711,15 @@
          (update-vars-fqn-listing-cb (id :vars-fqn-listing-cb-atom)
                                      (id :vars-fqn-listing-cb-action)
                                      (:vars-fqn-listing settings))
-         (update-vars-search-doc-also (id :vars-search-doc-also-cb)
-                                      (:vars-search-doc-also settings))
+         (if-let [places (:search-places settings)]
+           (update-search-places places)
+           ;; Otherwise check for config setting from previous
+           ;; version.
+           (if-let [search-doc-also (:vars-search-doc-also settings)]
+             (update-search-places {:doc search-doc-also})
+             ;; Otherwise just use empty map, which should default to
+             ;; all false.
+             (update-search-places {})))
          ))
      (selection! (id :ns-cbx) "loaded")
      (selection! (id :vars-cbx) "Vars - public")
@@ -828,7 +881,8 @@
         [(b/selection (id :vars-cbx))
          (b/selection (id :ns-lb) {:multi? true})
          (id :vars-filter-tf)
-         vars-search-doc-also-cb-atom
+         (id :clojuredocs-online-rb)
+         vars-search-places-atom
          vars-lb-refresh-atom
          group-vars-by-object-type-atom
          (id :vars-fqn-listing-cb-atom)])
@@ -840,10 +894,16 @@
               f (get vars-cbx-value-fn-map v)]
           (if n
             (f n (or always-display-fqn? (> (count n) 1))
-               @vars-search-doc-also-cb-atom)
+               ;; Disable searching of ClojureDocs examples when in
+               ;; ClojureDocs on-line mode.  We have no way to
+               ;; implement that with acceptable response time to the
+               ;; user.  Google has implemented that :-)
+               (if (config (id :clojuredocs-online-rb) :selected?)
+                 (assoc @vars-search-places-atom :examples false)
+                 @vars-search-places-atom))
             []))))
       (b/transform regx-tf-filter (id :vars-filter-tf)
-                   vars-search-doc-also-cb-atom)
+                   vars-search-places-atom)
       (b/transform (fn [symbol-info]
         (config! (id :vars-entries-lbl) :text (count symbol-info))
         (if @group-vars-by-object-type-atom
@@ -1129,8 +1189,6 @@
           vars-categorized-cb (checkbox-menu-item :action (id :vars-categorized-cb-action) 
                                                   :id :vars-categorized-cb)
           
-          vars-search-doc-also-cb (checkbox-menu-item :text "Search Docs Also" :id :vars-search-doc-also-cb)
-          
           auto-refresh-browser-cb (checkbox-menu-item :action (id :auto-refresh-browser-action) :id :auto-refresh-browser-cb)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
                                             :initial-delay 1000   :start? false)
@@ -1159,13 +1217,14 @@
       (config! ns-menu :items [(id :ns-require-btn-action) :separator (id :ns-trace-btn-action) (id :ns-untrace-btn-action)])
 
       (config! vars-menu :items 
-               [(id :var-trace-btn-action)
-                ;;:separator
-                ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action)
-                :separator
-                vars-categorized-cb 
-         vars-fqn-listing-cb vars-search-doc-also-cb])
-
+               (concat
+                [(id :var-trace-btn-action)
+                 ;;:separator
+                 ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action)
+                 :separator
+                 vars-categorized-cb 
+                 vars-fqn-listing-cb]
+                (map :checkbox-menu-item @search-places-list)))
       
       (config! auto-refresh-browser-cb
         :listen [:action (fn [e] (if (config auto-refresh-browser-cb :selected?) 
@@ -1173,12 +1232,17 @@
                                    (.stop auto-refresh-browser-timer)))]
         :selected? false)
 
-      (config! vars-search-doc-also-cb 
-        :listen [:action (fn [e] (update-vars-search-doc-also
-                                  vars-search-doc-also-cb
-                                  (config vars-search-doc-also-cb :selected?)))]
-        :selected? false)
-      
+      (doseq [search-place @search-places-list]
+        (let [cb-item (:checkbox-menu-item search-place)
+              place-key (:places-keyword search-place)]
+          (config! cb-item
+                   :listen [:action
+                            (fn [e]
+                              (update-search-places
+                               (assoc @vars-search-places-atom
+                                 place-key (config cb-item :selected?))))]
+                   :selected? false)))
+
       (config! color-coding-cb :selected? true)
 
       (config! font-Monospaced-rb :listen [:action (fn [e] (set-font-handler! root "Monospaced"))] :selected? true)
@@ -1232,7 +1296,6 @@
                                     :separator 
                                     (checkbox-menu-item :action (id :vars-categorized-cb-action))
                                     (checkbox-menu-item :action (id :vars-fqn-listing-cb-action))
-                                    ;; vars-search-doc-also-cb
                                     ;;:separator auto-refresh-browser-cb
                                     ])
 

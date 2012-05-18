@@ -307,14 +307,23 @@
     (zipmap str-list sym-list)))
 
 
-(defn symbols-of-ns-coll [ns-action f ns-coll display-fqn? search-doc-strings?]
+(defn get-source [fqn-sym]
+  (try
+    (clojure.repl/source-fn fqn-sym)
+    (catch Exception e)))
+
+
+(declare clojuredocs-text)
+
+(defn symbols-of-ns-coll [ns-action f ns-coll display-fqn? search-places]
   (when-not (or (nil? ns-coll) (empty? ns-coll) (nil? (first ns-coll)))
-    (let [g (case ns-action
+    (let [search-places-with-ks (map key (filter #(val %) search-places))
+          g (case ns-action
               (:aliases :special-forms) (fn [[k v]]
                                           {:symbol k
                                            :rough-category ns-action
                                            :var-class-or-ns v
-                                           :doc-string nil ; TBD: Fill this in
+                                           :search-places {} ; TBD: Fill this in
                                            :fqn-sym k
                                            :fqn-str (str k)
                                            :display-sym k
@@ -336,8 +345,40 @@
                                {:symbol sym
                                 :rough-category ns-action
                                 :var-class-or-ns var-or-class
-                                :doc-string (when search-doc-strings?
-                                              (:doc (meta var-or-class)))
+                                :search-places
+
+;; The value for key :examples should be nil if we are in ClojureDocs
+;; on-line mode.  There is no ClojureDoc API I know of to search all
+;; examples for a string or regex, and retrieving all examples from
+;; the web site when the user chooses "Search Examples Also" is way
+;; too slow, except for very small namespaces.
+
+;; In my preliminary testing, searching through all local examples is
+;; quite fast even for several thousand symbols.  We can memoize it if
+;; we want for faster speed.  It is nice that it is completely under
+;; the control of our code *when* the local snapshot of examples
+;; changes, so we know when to throw away the memo cache and build it
+;; up from scratch again.
+
+;; Doing get-source on several thousand symbols was fairly slow in my
+;; preliminary testing.  It would be nice to memoize that function,
+;; but there we have a tension between wanting to auto-update our
+;; display within a second or so after the user changes the
+;; definition.
+
+;; TBD: Find out if there is a way for our code to be notified when
+;; the source code or value of a Var changes, so that we don't have to
+;; poll everything.
+                                (zipmap search-places-with-ks
+                                        (map (fn [place-key]
+                                               (case place-key
+                                                 :doc (:doc (meta var-or-class))
+                                                 :source (get-source fqn-sym)
+                                                 :examples
+                                                 (clojuredocs-text
+                                                  (namespace fqn-sym)
+                                                  (name fqn-sym) :examples)))
+                                             search-places-with-ks))
                                 :fqn-sym fqn-sym
                                 :fqn-str (if fqn-sym
                                            (str fqn-sym)
@@ -688,8 +729,7 @@
         "Source"
         (if is-ns?
           (str "Select individual symbols in the namespace to see source")
-          (if-let [source-str (try (clojure.repl/source-fn (fqname-symbol fqn))
-                                   (catch Exception e))]
+          (if-let [source-str (get-source (fqname-symbol fqn))]
             source-str
             (str "Sorry - no source code available for " fqn)))
 
@@ -832,7 +872,9 @@ any code."
   {:clojuredocs-online true
    :vars-categorized-listing false
    :vars-fqn-listing false
-   :vars-search-doc-also false
+   :search-places {:doc false
+                   :source false
+                   :examples false}
    })
 
 (defn settings-filename []
