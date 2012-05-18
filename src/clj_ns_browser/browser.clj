@@ -11,7 +11,7 @@
             [seesaw.dnd]
             [seesaw.bind :as b]
             [seesaw.rsyntax]
-            [clojure.java.browse]
+            [clj-ns-browser.web]
             [clojure.java.shell]
             [clojure.java.io :as io]
             [clojure.pprint]
@@ -373,24 +373,24 @@
 
 (add-app-action :go-github-wiki-action
   (action :name "Clj-NS-Browser Wiki..."
-          :handler (fn [a] (future (clojure.java.browse/browse-url
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url
             "https://github.com/franks42/clj-ns-browser/wiki")))))
 (add-app-action :go-github-action
   (action :name "Clj-NS-Browser GitHub..."
-          :handler (fn [a] (future (clojure.java.browse/browse-url
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url
             "https://github.com/franks42/clj-ns-browser")))))
 (add-app-action :go-clojure.org-action
   (action :name "Clojure.org..."
-          :handler (fn [a] (future (clojure.java.browse/browse-url "http://clojure.org")))))
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://clojure.org")))))
 (add-app-action :go-clojuredocs-action
   (action :name "ClojureDocs..."
-          :handler (fn [a] (future (clojure.java.browse/browse-url "http://clojuredocs.org")))))
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://clojuredocs.org")))))
 (add-app-action :go-cheatsheet-action
   (action :name "Clojure CheatSheet..."
-          :handler (fn [a] (future (clojure.java.browse/browse-url "http://homepage.mac.com/jafingerhut/files/cheatsheet-clj-1.3.0-v1.4-tooltips/cheatsheet-full.html")))))
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://homepage.mac.com/jafingerhut/files/cheatsheet-clj-1.3.0-v1.4-tooltips/cheatsheet-full.html")))))
 (add-app-action :go-jira-action
   (action :name "JIRA..."
-          :handler (fn [a] (future (clojure.java.browse/browse-url
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url
             "http://dev.clojure.org/jira/browse/CLJ")))))
 (add-app-action :go-stackoverflow-action
   (action :name "Stackoverflow..."
@@ -400,7 +400,7 @@
                 (if-let [fqn-name (fqname fqn)]
                   (let [ns-n-class (ns-name-class-str fqn-name)
                         sname (if (nil? (second ns-n-class)) (first ns-n-class)(second ns-n-class))]
-                    (future (clojure.java.browse/browse-url
+                    (future (clj-ns-browser.web/browse-url
                       (str "http://stackoverflow.com/search?q=clojure+" sname))))))))))
 (add-app-action :go-about-action
   (action :name "About..."
@@ -466,7 +466,7 @@
             (let [id (partial select-id (to-root e))]
               (when-let [s (selection (id :doc-ta))]
                 (let [url (subs (config (id :doc-ta) :text) (first s) (second s))]
-                  (future (doall (clojure.java.browse/browse-url url)))))))))
+                  (future (doall (clj-ns-browser.web/browse-url url)))))))))
 
 (add-app-action :manual-refresh-browser-action
   (action :name "Manual Refresh"
@@ -1004,7 +1004,7 @@
               (case o
                 ("Examples" "See alsos" "Comments")
                 (when-let [url (clojuredocs-url fqn)]
-                  (clojure.java.browse/browse-url url))
+                  (clj-ns-browser.web/browse-url url))
 
                 (bdoc* fqn))))))))
     ;;
