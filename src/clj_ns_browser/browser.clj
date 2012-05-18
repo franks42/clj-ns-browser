@@ -387,7 +387,7 @@
           :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://clojuredocs.org")))))
 (add-app-action :go-cheatsheet-action
   (action :name "Clojure CheatSheet..."
-          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://homepage.mac.com/jafingerhut/files/cheatsheet-clj-1.3.0-v1.4-tooltips/cheatsheet-full.html")))))
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://jafingerhut.github.com/cheatsheet-clj-1.3/cheatsheet-tiptip-no-cdocs-summary.html")))))
 (add-app-action :go-jira-action
   (action :name "JIRA..."
           :handler (fn [a] (future (clj-ns-browser.web/browse-url
