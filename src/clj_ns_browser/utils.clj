@@ -477,7 +477,17 @@
 (defn pprint-str
   "Return string with pprint of v, and limit output to prevent blowup."
   ([v & kvs]
-    (with-out-str (binding [*print-length* 32 *print-level* 6] (pprint v)))))
+     (with-out-str
+       ;; Special case for these Vars so that they pprint the correct
+       ;; values.  Assume that their values do not need the
+       ;; *print-length* or *print-level* restrictions to be short.
+       ;; Since their values are almost always integers, this is
+       ;; usually the case.
+       (if (or (= v #'clojure.core/*print-length*)
+               (= v #'clojure.core/*print-level*))
+         (pprint v)
+         (binding [*print-length* 32 *print-level* 6]
+           (pprint v))))))
 
 
 (defn val-kv-filter
