@@ -262,6 +262,13 @@
                                            (repeat false))))
 (def ns-lb-refresh-atom (atom true))
 (def vars-lb-refresh-atom (atom true))
+(def prev-vars-to-filter-atom (atom []))
+(def vars-to-filter-atom (atom []))
+(def vars-to-filter-changed-atom (atom true))
+(def debug-vars-to-filter-changes false)
+(when debug-vars-to-filter-changes
+  (def create-vars-to-filter-count (atom 0))
+  (def vars-filter-count (atom 0)))
 
 ;; bind specific fns
 
@@ -875,16 +882,14 @@
       (b/property (id :ns-lb) :model))
     ;;
     ;; (un-)loaded vars-cbx and regex filter tf =>
-    ;; updated vars-list in vars-lb
+    ;; updated list of vars to filter
     (b/bind
       (apply b/funnel
         [(b/selection (id :vars-cbx))
          (b/selection (id :ns-lb) {:multi? true})
-         (id :vars-filter-tf)
          (id :clojuredocs-online-rb)
          vars-search-places-atom
          vars-lb-refresh-atom
-         group-vars-by-object-type-atom
          (id :vars-fqn-listing-cb-atom)])
       (b/transform (fn [o]
         (let [ns-list (selection (id :ns-lb) {:multi? true})
@@ -892,16 +897,46 @@
               always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
-          (if n
-            (f n (or always-display-fqn? (> (count n) 1))
-               ;; Disable searching of ClojureDocs examples when in
-               ;; ClojureDocs on-line mode.  We have no way to
-               ;; implement that with acceptable response time to the
-               ;; user.  Google has implemented that :-)
-               (if (config (id :clojuredocs-online-rb) :selected?)
-                 (assoc @vars-search-places-atom :examples false)
-                 @vars-search-places-atom))
-            []))))
+          (reset! prev-vars-to-filter-atom @vars-to-filter-atom)
+          (reset! vars-to-filter-atom
+                  (if n
+                    (f n (or always-display-fqn? (> (count n) 1))
+                       ;; Disable searching of ClojureDocs examples
+                       ;; when in ClojureDocs on-line mode.  We have
+                       ;; no way to implement that with acceptable
+                       ;; response time to the user.  Google has
+                       ;; implemented that :-)
+                       (if (config (id :clojuredocs-online-rb) :selected?)
+                         (assoc @vars-search-places-atom :examples false)
+                         @vars-search-places-atom))
+                    []))
+          (when (not= @prev-vars-to-filter-atom @vars-to-filter-atom)
+            (swap! vars-to-filter-changed-atom not))
+          (when debug-vars-to-filter-changes
+            (swap! create-vars-to-filter-count inc)
+            (printf "%d Updating vars-to-filter-atom change?=%s\n"
+                    @create-vars-to-filter-count
+                    (not= @prev-vars-to-filter-atom @vars-to-filter-atom))
+;;            (when @vars-to-filter-changed-atom
+;;              (printf "diff='%s'\n" (pprint-str (d/diff @prev-vars-to-filter-atom
+;;                                                        @vars-to-filter-atom))))
+            (flush))
+          ))))
+    ;;
+    ;; updated list of vars to filter and regex filter tf =>
+    ;; updated vars-list in vars-lb
+    (b/bind
+      (apply b/funnel
+        [vars-to-filter-changed-atom
+         (id :vars-filter-tf)
+         vars-search-places-atom
+         group-vars-by-object-type-atom])
+      (b/transform (fn [o]
+                     (when debug-vars-to-filter-changes
+                       (swap! vars-filter-count inc)
+                       (printf "%d Updating vars-lb list\n" @vars-filter-count)
+                       (flush))
+                     @vars-to-filter-atom))
       (b/transform regx-tf-filter (id :vars-filter-tf)
                    vars-search-places-atom)
       (b/transform (fn [symbol-info]
