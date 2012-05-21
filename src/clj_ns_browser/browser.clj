@@ -240,7 +240,8 @@
 (defn ns-unloaded [] @all-ns-unloaded-atom)
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
-(def group-vars-by-object-type-atom (atom false))
+(def vars-fqn-listing-atom (atom false))
+(def vars-categorized-listing-atom (atom false))
 (def search-places-list
   (atom [{:menu-item-text "Search Docs Also"
           :menu-item-keyword :vars-search-doc-also-cb
@@ -564,36 +565,34 @@
                                        (alert (str "Untraced all traced-vars in namespace: " ns-str)))
                                    (alert (str "Not a valid/loaded namespace: " ns-str)))))))))
 
-(defn update-vars-categorized-cb [cb-action-id new-val]
-  (reset! group-vars-by-object-type-atom new-val)
-  (config! cb-action-id :selected? new-val)
-  (update-settings! {:vars-categorized-listing new-val}))
+(defn update-cb [cb-item atom-var settings-keyword new-val]
+  (reset! atom-var new-val)
+  (config! cb-item :selected? new-val)
+  (update-settings! {settings-keyword new-val}))
 
-(add-app-action :vars-categorized-cb-action
+(add-app-action :vars-categorized-listing-cb-action
   (action :name "Categorized Listing"
           :selected? false
           :handler
-            (fn [e] (let [root (to-root e)]
-                      (letfn [(id [kw] (select-id root kw))]
-                        (update-vars-categorized-cb
-                         (id :vars-categorized-cb-action)
-                         (config (id :vars-categorized-cb-action) :selected?)))))))
-
-(defn update-vars-fqn-listing-cb [atm cb-action-id new-val]
-  (reset! atm new-val)
-  (config! cb-action-id :selected? new-val)
-  (update-settings! {:vars-fqn-listing new-val}))
+          (fn [e] (let [root (to-root e)]
+                    (letfn [(id [kw] (select-id root kw))]
+                      (update-cb (id :vars-categorized-listing-cb-action)
+                                 vars-categorized-listing-atom
+                                 :vars-categorized-listing
+                                 (config (id :vars-categorized-listing-cb-action)
+                                         :selected?)))))))
 
 (add-app-action :vars-fqn-listing-cb-action
   (action :name "FQN Listing"
           :selected? false
-          :handler 
-            (fn [e] (let [root (to-root e)]
-                      (letfn [(id [kw] (select-id root kw))]
-                        (update-vars-fqn-listing-cb
-                         (id :vars-fqn-listing-cb-atom)
-                         (id :vars-fqn-listing-cb-action)
-                         (config (id :vars-fqn-listing-cb-action) :selected?)))))))
+          :handler
+          (fn [e] (let [root (to-root e)]
+                    (letfn [(id [kw] (select-id root kw))]
+                      (update-cb (id :vars-fqn-listing-cb-action)
+                                 vars-fqn-listing-atom
+                                 :vars-fqn-listing
+                                 (config (id :vars-fqn-listing-cb-action)
+                                         :selected?)))))))
 
 (defn update-search-places [new-val-map]
   (reset! vars-search-places-atom new-val-map)
@@ -715,11 +714,14 @@
                :ok (config! (id :clojuredocs-offline-rb) :selected? true)
                :snapshot-file-not-found
                (config! (id :clojuredocs-online-rb) :selected? true))))
-         (update-vars-categorized-cb (id :vars-categorized-cb-action)
-                                     (:vars-categorized-listing settings))
-         (update-vars-fqn-listing-cb (id :vars-fqn-listing-cb-atom)
-                                     (id :vars-fqn-listing-cb-action)
-                                     (:vars-fqn-listing settings))
+         (update-cb (id :vars-categorized-listing-cb-action)
+                    vars-categorized-listing-atom
+                    :vars-categorized-listing
+                    (:vars-categorized-listing settings))
+         (update-cb (id :vars-fqn-listing-cb-action)
+                    vars-fqn-listing-atom
+                    :vars-fqn-listing
+                    (:vars-fqn-listing settings))
          (if-let [places (:search-places settings)]
            (update-search-places places)
            ;; Otherwise check for config setting from previous
@@ -892,17 +894,16 @@
          (id :clojuredocs-online-rb)
          vars-search-places-atom
          vars-lb-refresh-atom
-         (id :vars-fqn-listing-cb-atom)])
+         vars-fqn-listing-atom])
       (b/transform (fn [o]
         (let [ns-list (selection (id :ns-lb) {:multi? true})
               n (and ns-list (map #(find-ns (symbol %)) ns-list))
-              always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)
               v (selection (id :vars-cbx))
               f (get vars-cbx-value-fn-map v)]
           (reset! prev-vars-to-filter-atom @vars-to-filter-atom)
           (reset! vars-to-filter-atom
                   (if n
-                    (f n (or always-display-fqn? (> (count n) 1))
+                    (f n (or @vars-fqn-listing-atom (> (count n) 1))
                        ;; Disable searching of ClojureDocs examples
                        ;; when in ClojureDocs on-line mode.  We have
                        ;; no way to implement that with acceptable
@@ -932,7 +933,7 @@
         [vars-to-filter-changed-atom
          (id :vars-filter-tf)
          vars-search-places-atom
-         group-vars-by-object-type-atom])
+         vars-categorized-listing-atom])
       (b/transform (fn [o]
                      (when debug-vars-to-filter-changes
                        (swap! vars-filter-count inc)
@@ -943,7 +944,7 @@
                    vars-search-places-atom)
       (b/transform (fn [symbol-info]
         (config! (id :vars-entries-lbl) :text (count symbol-info))
-        (if @group-vars-by-object-type-atom
+        (if @vars-categorized-listing-atom
           (group-by-object-type symbol-info)
           (sort (map :display-str symbol-info)))))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
@@ -1224,8 +1225,8 @@
 
           vars-fqn-listing-cb (checkbox-menu-item :action (id :vars-fqn-listing-cb-action) :id :vars-fqn-listing-cb)
           
-          vars-categorized-cb (checkbox-menu-item :action (id :vars-categorized-cb-action) 
-                                                  :id :vars-categorized-cb)
+          vars-categorized-listing-cb (checkbox-menu-item :action (id :vars-categorized-listing-cb-action) 
+                                                  :id :vars-categorized-listing-cb)
           
           auto-refresh-browser-cb (checkbox-menu-item :action (id :auto-refresh-browser-action) :id :auto-refresh-browser-cb)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
@@ -1260,7 +1261,7 @@
                  ;;:separator
                  ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action)
                  :separator
-                 vars-categorized-cb 
+                 vars-categorized-listing-cb 
                  vars-fqn-listing-cb]
                 (map :checkbox-menu-item @search-places-list)))
       
@@ -1332,7 +1333,7 @@
                                     ;;:separator 
                                     ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action) 
                                     :separator 
-                                    (checkbox-menu-item :action (id :vars-categorized-cb-action))
+                                    (checkbox-menu-item :action (id :vars-categorized-listing-cb-action))
                                     (checkbox-menu-item :action (id :vars-fqn-listing-cb-action))
                                     ;;:separator auto-refresh-browser-cb
                                     ])
