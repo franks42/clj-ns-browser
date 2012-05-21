@@ -90,13 +90,15 @@
 (defn font-size+
   "Increase the font-size of the widget w by 1."
   [w]
-  (config! w :font {:size (+ 1 (.getSize (config w :font)))}))
+  (let [f (config w :font)]
+    (config! w :font {:name (.getName f) :size (inc (.getSize f))})))
 
 
 (defn font-size-
   "Decrease the font-size of the widget w by 1."
   [w]
-  (config! w :font {:size (- (.getSize (config w :font)) 1)}))
+  (let [f (config w :font)]
+    (config! w :font {:name (.getName f) :size (dec (.getSize f))})))
 
 
 ;; constants and global maps shared by all seesaw widgets
