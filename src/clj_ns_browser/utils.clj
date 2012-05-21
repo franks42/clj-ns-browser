@@ -9,6 +9,7 @@
 (ns clj-ns-browser.utils
   (:require [clojure.set]
             [cd-client.core]
+            [clojure.core.memoize :as memo]
             [clojure.java.shell]
             [clojure.java.io]
             [clojure.string :as str]
@@ -307,10 +308,12 @@
     (zipmap str-list sym-list)))
 
 
-(defn get-source [fqn-sym]
+(defn get-source-core [fqn-sym]
   (try
     (clojure.repl/source-fn fqn-sym)
     (catch Exception e)))
+
+(def get-source (memo/memo get-source-core))
 
 
 (declare clojuredocs-text)
