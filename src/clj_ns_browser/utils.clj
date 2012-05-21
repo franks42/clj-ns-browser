@@ -308,10 +308,22 @@
     (zipmap str-list sym-list)))
 
 
+;; TBD: get-source-core never returns useful source code for functions
+;; defined at the REPL.  Is there a way to make an enhanced version of
+;; get-source-core that can retrieve source code for such functions?
+
 (defn get-source-core [fqn-sym]
   (try
     (clojure.repl/source-fn fqn-sym)
     (catch Exception e)))
+
+;; TBD: Need a way to erase the memoization cache when the source code
+;; of the functions changes, or at least parts of the memoization
+;; cache for which the source code might have changed.  For example,
+;; if a source code file is reloaded, then at least those redefined
+;; functions should have their memoization cache entries cleared.  It
+;; would be straightforward to simply erase the entire memoization
+;; cache when any answers might have changed.
 
 (def get-source (memo/memo get-source-core))
 
