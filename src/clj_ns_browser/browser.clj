@@ -1008,7 +1008,8 @@
                 (when-let [url (clojuredocs-url fqn)]
                   (clj-ns-browser.web/browse-url url))
 
-                (bdoc* fqn))))))))
+                (with-redefs [clojure.java.browse/browse-url clj-ns-browser.web/browse-url]
+                  (bdoc* fqn)))))))))
     ;;
     ;; edit-btn pressed =>
     ;; if we find a local file (not inside jar), then send to $EDITOR.
