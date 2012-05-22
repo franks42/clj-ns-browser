@@ -323,6 +323,11 @@
 ;;
 ;; The map might have other keys with defined values, but need not.
 
+(defn re-to-use [s case-sensitive-search?]
+  (if case-sensitive-search?
+    s
+    (str "(?i)" s)))
+
 (defn regx-tf-filter
   "filter for use in bind that filters string-list s-l with regex of
 text-field t-f"
@@ -330,9 +335,8 @@ text-field t-f"
   (let [search-places (deref search-places-atom)
         search-places-with-ks (map key (filter #(val %) search-places))
         case-sensitive-search? (deref case-sensitive-search-atom)]
-    (when-let [r (try (re-pattern (if case-sensitive-search?
-                                    (config t-f :text)
-                                    (str "(?i)" (config t-f :text))))
+    (when-let [r (try (re-pattern (re-to-use (config t-f :text)
+                                             case-sensitive-search?))
                       (catch Exception e nil))]
       (filter (fn [info]
                 (if (string? info)
