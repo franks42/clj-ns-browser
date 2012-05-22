@@ -895,6 +895,7 @@ any code."
 
 (def default-settings
   {:clojuredocs-online true
+   :vars-case-sensitive-search true
    :vars-categorized-listing false
    :vars-fqn-listing false
    :search-places {:doc false

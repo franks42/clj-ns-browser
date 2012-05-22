@@ -240,8 +240,9 @@
 (defn ns-unloaded [] @all-ns-unloaded-atom)
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
-(def vars-fqn-listing-atom (atom false))
+(def vars-case-sensitive-search-atom (atom true))
 (def vars-categorized-listing-atom (atom false))
+(def vars-fqn-listing-atom (atom false))
 (def search-places-list
   (atom [{:menu-item-text "Search Docs Also"
           :menu-item-keyword :vars-search-doc-also-cb
@@ -323,11 +324,15 @@
 ;; The map might have other keys with defined values, but need not.
 
 (defn regx-tf-filter
-  "filter for use in bind that filters string-list s-l with regex of text-field t-f"
-  [symbol-info t-f search-places-atom]
+  "filter for use in bind that filters string-list s-l with regex of
+text-field t-f"
+  [symbol-info t-f search-places-atom case-sensitive-search-atom]
   (let [search-places (deref search-places-atom)
-        search-places-with-ks (map key (filter #(val %) search-places))]
-    (when-let [r (try (re-pattern (config t-f :text))
+        search-places-with-ks (map key (filter #(val %) search-places))
+        case-sensitive-search? (deref case-sensitive-search-atom)]
+    (when-let [r (try (re-pattern (if case-sensitive-search?
+                                    (config t-f :text)
+                                    (str "(?i)" (config t-f :text))))
                       (catch Exception e nil))]
       (filter (fn [info]
                 (if (string? info)
@@ -570,6 +575,18 @@
   (config! cb-item :selected? new-val)
   (update-settings! {settings-keyword new-val}))
 
+(add-app-action :vars-case-sensitive-search-cb-action
+  (action :name "Case Sensitive Search"
+          :selected? false
+          :handler
+          (fn [e] (let [root (to-root e)]
+                    (letfn [(id [kw] (select-id root kw))]
+                      (update-cb (id :vars-case-sensitive-search-cb-action)
+                                 vars-case-sensitive-search-atom
+                                 :vars-case-sensitive-search
+                                 (config (id :vars-case-sensitive-search-cb-action)
+                                         :selected?)))))))
+
 (add-app-action :vars-categorized-listing-cb-action
   (action :name "Categorized Listing"
           :selected? false
@@ -664,6 +681,7 @@
     (config! (id :browse-btn) :enabled? false)
     (config! (id :clojuredocs-online-rb) :selected? true)
     (config! (id :inspect-btn) :enabled? false)
+    (config! (id :vars-case-sensitive-search-cb-action) :selected? true)
     (config! (id :vars-fqn-listing-cb-action) :selected? false)
     (listen (id :inspect-btn)
       :action (fn [event] (swap! (id :inspect-btn-atom) not)))
@@ -714,6 +732,10 @@
                :ok (config! (id :clojuredocs-offline-rb) :selected? true)
                :snapshot-file-not-found
                (config! (id :clojuredocs-online-rb) :selected? true))))
+         (update-cb (id :vars-case-sensitive-search-cb-action)
+                    vars-case-sensitive-search-atom
+                    :vars-case-sensitive-search
+                    (:vars-case-sensitive-search settings))
          (update-cb (id :vars-categorized-listing-cb-action)
                     vars-categorized-listing-atom
                     :vars-categorized-listing
@@ -873,7 +895,7 @@
         (let [v (selection (id :ns-cbx))]
           (when (= v "unloaded") (config! (id :doc-tf) :text "")(config! (id :doc-ta) :text ""))
           ((get ns-cbx-value-fn-map v)))))
-      (b/transform regx-tf-filter (id :ns-filter-tf) (atom false))
+      (b/transform regx-tf-filter (id :ns-filter-tf) (atom false) (atom true))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
         (if (= l (seesaw.meta/get-meta root :last-ns-lb))
           false
@@ -932,6 +954,7 @@
       (apply b/funnel
         [vars-to-filter-changed-atom
          (id :vars-filter-tf)
+         vars-case-sensitive-search-atom
          vars-search-places-atom
          vars-categorized-listing-atom])
       (b/transform (fn [o]
@@ -941,7 +964,7 @@
                        (flush))
                      @vars-to-filter-atom))
       (b/transform regx-tf-filter (id :vars-filter-tf)
-                   vars-search-places-atom)
+                   vars-search-places-atom vars-case-sensitive-search-atom)
       (b/transform (fn [symbol-info]
         (config! (id :vars-entries-lbl) :text (count symbol-info))
         (if @vars-categorized-listing-atom
@@ -1223,10 +1246,15 @@
           clojuredocs-online-rb (radio-menu-item :text "ClojureDocs Online" :id :clojuredocs-online-rb :group clojuredocs-access-btn-group)
           clojuredocs-offline-rb (radio-menu-item :text "ClojureDocs Offline/Local" :id :clojuredocs-offline-rb :group clojuredocs-access-btn-group)
 
-          vars-fqn-listing-cb (checkbox-menu-item :action (id :vars-fqn-listing-cb-action) :id :vars-fqn-listing-cb)
-          
-          vars-categorized-listing-cb (checkbox-menu-item :action (id :vars-categorized-listing-cb-action) 
-                                                  :id :vars-categorized-listing-cb)
+          vars-case-sensitive-search-cb (checkbox-menu-item
+                                         :action (id :vars-case-sensitive-search-cb-action)
+                                         :id :vars-case-sensitive-search-cb)
+          vars-fqn-listing-cb (checkbox-menu-item
+                               :action (id :vars-fqn-listing-cb-action)
+                               :id :vars-fqn-listing-cb)
+          vars-categorized-listing-cb (checkbox-menu-item
+                                       :action (id :vars-categorized-listing-cb-action) 
+                                       :id :vars-categorized-listing-cb)
           
           auto-refresh-browser-cb (checkbox-menu-item :action (id :auto-refresh-browser-action) :id :auto-refresh-browser-cb)
           auto-refresh-browser-timer (timer auto-refresh-browser-handler  :initial-value {:root root} 
@@ -1261,6 +1289,7 @@
                  ;;:separator
                  ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action)
                  :separator
+                 vars-case-sensitive-search-cb
                  vars-categorized-listing-cb 
                  vars-fqn-listing-cb]
                 (map :checkbox-menu-item @search-places-list)))
@@ -1333,6 +1362,7 @@
                                     ;;:separator 
                                     ;;(id :vars-unmap-btn-action) (id :vars-unalias-btn-action) 
                                     :separator 
+                                    (checkbox-menu-item :action (id :vars-case-sensitive-search-cb-action))
                                     (checkbox-menu-item :action (id :vars-categorized-listing-cb-action))
                                     (checkbox-menu-item :action (id :vars-fqn-listing-cb-action))
                                     ;;:separator auto-refresh-browser-cb
