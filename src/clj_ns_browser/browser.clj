@@ -174,43 +174,30 @@
   "Special-Forms"
   ])
 
-(def vars-cbx-value-fn-map {"Aliases"  #(symbols-of-ns-coll
-                                         :aliases ns-aliases %1 %2 %3)
-                            "Classes - all"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-imports %1 %2 %3)
-                            "Vars - all"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns %1 %2 %3)
-                            "All"      #(symbols-of-ns-coll
-                                         :ns-map-subset ns-map %1 %2 %3)
-                            "Classes - deftype"      #(symbols-of-ns-coll
-                                         :ns-map-subset ns-map-deftype %1 %2 %3)
-                            "Classes - defrecord"    #(symbols-of-ns-coll
-                                         :ns-map-subset ns-map-defrecord %1 %2 %3)
-                            "Vars - public"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-publics %1 %2 %3)
-                            "Vars - macro"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-macro %1 %2 %3)
-                            "Vars - defn"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-defn %1 %2 %3)
-                            "Vars - protocol"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-protocol %1 %2 %3)
-                            "Vars - protocol-fn"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-protocol-fn %1 %2 %3)
-                            "Vars - multimethod"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-var-multimethod %1 %2 %3)
-                            "Vars - dynamic"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-var-dynamic %1 %2 %3)
-                            "Vars - traced"  #(symbols-of-ns-coll
-                                         :ns-map-subset ns-interns-var-traced %1 %2 %3)
-                            "Vars - private" #(symbols-of-ns-coll
-                                         :ns-map-subset ns-privates %1 %2 %3)
-                            "Refers - all"   #(symbols-of-ns-coll
-                                         :ns-map-subset ns-refers %1 %2 %3)
-                            "Refers w/o core"   #(symbols-of-ns-coll
-                                         :ns-map-subset ns-refers-wo-core %1 %2 %3)
-                            "Special-Forms" #(symbols-of-ns-coll
-                                              :special-forms ns-special-forms %1 %2 %3)
-                            })
+(defn sonc [ns-action f]
+  (fn [ns-coll display-fqn? search-places]
+    (symbols-of-ns-coll ns-action f ns-coll display-fqn? search-places)))
+
+(def vars-cbx-value-fn-map
+  {"Aliases"             (sonc :aliases ns-aliases)
+   "Classes - all"       (sonc :ns-map-subset ns-imports)
+   "Vars - all"          (sonc :ns-map-subset ns-interns)
+   "All"                 (sonc :ns-map-subset ns-map)
+   "Classes - deftype"   (sonc :ns-map-subset ns-map-deftype)
+   "Classes - defrecord" (sonc :ns-map-subset ns-map-defrecord)
+   "Vars - public"       (sonc :ns-map-subset ns-publics)
+   "Vars - macro"        (sonc :ns-map-subset ns-interns-macro)
+   "Vars - defn"         (sonc :ns-map-subset ns-interns-defn)
+   "Vars - protocol"     (sonc :ns-map-subset ns-interns-protocol)
+   "Vars - protocol-fn"  (sonc :ns-map-subset ns-interns-protocol-fn)
+   "Vars - multimethod"  (sonc :ns-map-subset ns-interns-var-multimethod)
+   "Vars - dynamic"      (sonc :ns-map-subset ns-interns-var-dynamic)
+   "Vars - traced"       (sonc :ns-map-subset ns-interns-var-traced)
+   "Vars - private"      (sonc :ns-map-subset ns-privates)
+   "Refers - all"        (sonc :ns-map-subset ns-refers)
+   "Refers w/o core"     (sonc :ns-map-subset ns-refers-wo-core)
+   "Special-Forms"       (sonc :special-forms ns-special-forms)
+   })
 
 
 (def doc-lb-value-list ["Doc" "Source" "Examples"
