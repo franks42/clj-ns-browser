@@ -348,17 +348,6 @@ text-field t-f"
     (letfn [(id [kw] (select-id root kw))]
       (.ensureIndexIsVisible (id lbx-kw) (.getSelectedIndex (id lbx-kw))))))
 
-(defn find-in-doc-strings
-  [pat-in-str]
-  (when-let [r (try (re-pattern pat-in-str)
-                    (catch Exception e nil))]
-    (->> (all-ns)
-         (mapcat #(map meta (vals (ns-interns %))))
-         (filter #(and (:doc %)
-                       (or (re-find r (:doc %))
-                           (re-find r (str (:name %))))))
-         (map #(str (:ns %) "/" (:name %))))))
-
 
 (defn better-get-docs-map [fqn]
   (if (= fqn "clojure.core//")
