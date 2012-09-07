@@ -44,6 +44,9 @@
                                   buttons))
         max-height (apply max (map #(-> % :button-sel .getPreferredSize .height)
                                    buttons))
+        ;; Reduce the sizes a bit.
+        max-width (int (* 0.85 max-width))
+        max-height (int (* 0.85 max-height))
         label-to-icon-sel (into {}
                            (map (fn [{:keys [label button-sel]}]
                                   [label
