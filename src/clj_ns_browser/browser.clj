@@ -622,7 +622,7 @@
     (config! (id :vars-entries-lbl) :text "0")
     ;; doc
     (config! (id :doc-tf) :text "")
-    (config! (id :doc-ta) :text "                                                                        ")
+    (config! (id :doc-ta) :text "                                                                                            ")
     (selection! (id :ns-cbx) "loaded")
     (selection! (id :vars-cbx) "Vars - public")
     (selection! (id :doc-lb) "Doc")))
