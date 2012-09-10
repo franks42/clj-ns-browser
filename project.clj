@@ -7,7 +7,7 @@
                  [seesaw "1.4.2"]
                  ;;[franks42/seesaw "1.4.2-SNAPSHOT"]
                  [org.clojure/tools.namespace "0.1.3"]
-                 [clj-info "0.2.3"]
+                 [clj-info "0.2.4"]
                  [org.clojure/tools.trace "0.7.3"]
                  [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
                  ;;[org.fife.ui/rsyntaxtextarea "2.0.3"]
