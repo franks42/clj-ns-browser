@@ -2,17 +2,27 @@
 
 Clj-ns-browser is a namespace/class/var browser for Clojure's doc strings, source code, ClojureDocs.org examples & comments, and values.  The browser's GUI is inspired by Smalltalk class library browsers, and is based on the Seesaw library.
 
-Look for the last released version on clojars.org: [clj-ns-browser "1.2.0"].
+Look for the last released version on clojars.org: [clj-ns-browser "1.3.0"].
 
 ![Clojure Namespace Browser](https://github.com/franks42/clj-ns-browser/raw/master/clj-ns-browser.png "Clojure Namespace Browser")
 
 ## Introduction
 
-The "It starts to look like a real App" release, "1.2.0", adds a long list of new features to clj-ns-browser compared to the ancient, legacy "1.1.0" release that is already a few weeks old. 
-
-One important distinction between the new and the old version, is the use of menus, popup-menus, keyboard short-cuts, copy&paste, drag&drop... all thanks to seesaw of course.
+The "cool button-row widget" release, "1.3.0", adds a few new features to clj-ns-browser compared to the  "1.2.0" release that is already a few months old. 
 
 A few of the highlights of the new browser's feature set are:
+
+* upgraded dependencies to latest&greatest (clojure 1.4, seesaw 1.4.2, etc.)
+
+* cool new button-row widget that allows for flexible display of var/class/namespace information.
+
+* syntax highlighting of source code thru use of rsyntaxtextarea
+
+* improved invocation of external browser
+
+* many invisible improvements
+
+While the "old" features still work of course:
 
 * see the loaded and unloaded namespaces, and "require" with one-click
 
@@ -38,7 +48,19 @@ A few of the highlights of the new browser's feature set are:
 
 * on top of all that, we also have demo videos where Andy walks you thru the browser's features one-by-one ([Part 1](http://www.youtube.com/watch?v=wz3lD5zD8ag) and [Part 2](http://www.youtube.com/watch?v=aYvegaFVKHw))
 
-That partial feature list should be more than enough to make you want to read the next section...
+
+## Flexible Display of Var's Doc/Source/Value
+
+Above the Documentation panel's text area, we have a (very cool) new row of buttons: Doc, Source, Examples, Comments, See alsos, and Value.
+
+By clicking any of those buttons, the associated information is displayed about the selected symbol/var/class/namespace. 
+
+By Command/CTRL clicking, multiple button can be selected, and the info for all those buttons will be displayed. 
+
+Lastly, the buttons can be dragged to change the order in which the info is displayed in the text area.
+
+
+![Var's flexible doc/source/value view thru Andy's concocted button-row widget!] (https://github.com/franks42/clj-ns-browser/raw/master/clj-ns-browser-source.png "Var's flexible doc/source/value view")
 
 
 ## Install & Start-up
@@ -47,10 +69,10 @@ For any project where you want to add the ability to browse your currently loade
 
 ```
     ;; Leiningen version 1
-    :dev-dependencies [[clj-ns-browser "1.2.0"]]
+    :dev-dependencies [[clj-ns-browser "1.3.0"]]
 
     ;; Leiningen version 2
-    :profiles {:dev {:dependencies [[clj-ns-browser "1.2.0"]]}}
+    :profiles {:dev {:dependencies [[clj-ns-browser "1.3.0"]]}}
 ```
 
 Then fire-up your repl, refer to the sdoc macro in clj-ns-browser.sdoc, and start the browser with (sdoc):
@@ -62,7 +84,7 @@ Then fire-up your repl, refer to the sdoc macro in clj-ns-browser.sdoc, and star
 
 ... and the browser window should popup on your screen - very easy!
 
-It should actually work from any repl - tested on MacOSX, Linux, even Windows... with Leiningen 1.7.1 & 2.0.0-preview4, repls, repl-y, emacs and Sublime Text 2.  It has failed to work with 2.0.0-preview3 for some reason we are not sure of -- perhaps a conflicting version of the cd-client being used between Leiningen and clj-ns-browser.
+It should actually work from any repl - tested on MacOSX, Linux, even Windows... with Leiningen 1.7.1 & 2.0.0-preview10, repls, repl-y, emacs and Sublime Text 2.
 
 
 ## Documentation, Usage, Issues, Futures...
