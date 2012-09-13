@@ -14,7 +14,7 @@ A few of the highlights of the new browser's feature set are:
 
 * upgraded dependencies to latest&greatest (clojure 1.4, seesaw 1.4.2, etc.)
 
-* cool new button-row widget that allows for flexible display of var/class/namespace information.
+* Andy concocted a cool, new, button-row widget that allows for flexible display of var/class/namespace information.
 
 * syntax highlighting of source code thru use of rsyntaxtextarea
 
