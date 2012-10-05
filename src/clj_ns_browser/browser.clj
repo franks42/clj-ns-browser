@@ -24,7 +24,8 @@
             [seesaw.clipboard]
             [clojure.java.javadoc]
             [cd-client.core]
-            [clojure.tools.trace])
+            [clojure.tools.trace]
+            [cljs-ns])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
         [seesaw.border]
@@ -150,9 +151,10 @@
 ;; app specific constants
 
 
-(def ns-cbx-value-list ["loaded" "unloaded"])
-(def ns-cbx-value-fn-map {  "loaded"    all-ns-loaded
-                            "unloaded"  all-ns-unloaded})
+(def ns-cbx-value-list ["clj-loaded" "cljs-loaded" "clj-unloaded"])
+(def ns-cbx-value-fn-map {  "clj-loaded"    all-ns-loaded
+                            "cljs-loaded"   cljs-ns/cljs-all-ns-str
+                            "clj-unloaded"  all-ns-unloaded})
 (def vars-cbx-value-list [
   "Vars - all"
   "Vars - public"
@@ -173,6 +175,32 @@
   "Aliases"
   "Special-Forms"
   ])
+
+(defn cljs-sonc [ns-action f]
+  (fn [ns-coll display-fqn? search-places]
+    (cljs-symbols-of-ns-coll ns-action f ns-coll display-fqn? search-places)))
+
+(def cljs-vars-cbx-value-fn-map
+  {
+;;    "Aliases"             (cljs-sonc :aliases cljs-ns/cljs-ns-aliases)
+;;    "Classes - all"       (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-imports)
+   "Vars - all"          (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns)
+   "All"                 (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-map)
+;;    "Classes - deftype"   (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-map-deftype)
+;;    "Classes - defrecord" (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-map-defrecord)
+   "Vars - public"       (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-publics)
+;;    "Vars - macro"        (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-macro)
+;;    "Vars - defn"         (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-defn)
+;;    "Vars - protocol"     (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-protocol)
+;;    "Vars - protocol-fn"  (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-protocol-fn)
+;;    "Vars - multimethod"  (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-var-multimethod)
+;;    "Vars - dynamic"      (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-var-dynamic)
+;;    "Vars - traced"       (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-var-traced)
+   "Vars - private"      (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-privates)
+   "Refers - all"        (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-refers)
+   "Refers w/o core"     (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-refers-wo-core)
+;;    "Special-Forms"       (cljs-sonc :special-forms cljs-ns/cljs-ns-special-forms)
+   })
 
 (defn sonc [ns-action f]
   (fn [ns-coll display-fqn? search-places]
@@ -222,11 +250,14 @@
 
 (def settings-atom (atom {}))
 (def all-ns-loaded-atom (atom nil))
+(def all-cljs-ns-loaded-atom (atom nil))
 (def all-ns-unloaded-atom (atom nil))
 (defn ns-loaded [] @all-ns-loaded-atom)
+(defn cljs-ns-loaded [] @all-cljs-ns-loaded-atom)
 (defn ns-unloaded [] @all-ns-unloaded-atom)
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
+(swap! all-cljs-ns-loaded-atom (fn [& a] (cljs-ns/cljs-all-ns-str)))
 (def group-vars-by-object-type-atom (atom false))
 (def vars-search-doc-also-cb-atom (atom false))
 (def ns-lb-refresh-atom (atom true))
@@ -448,6 +479,7 @@
               (if-let [s (selection (id :doc-ta))]
                 (let [fqn (subs (config (id :doc-ta) :text) (first s) (second s))]
                   (invoke-soon (browser-with-fqn *ns* fqn (to-root e)))))))))
+
 (add-app-action :open-url-from-selection-action
   (action :name "Open URL from selection"
           :key  "menu I"
@@ -587,6 +619,7 @@
     (seesaw.meta/put-meta! root :fqn-history-list-atom (atom []))
     (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
     (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
+    (swap! all-cljs-ns-loaded-atom (fn [& a] (cljs-ns/cljs-all-ns-str)))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     (config! (id :vars-cbx) :model vars-cbx-value-list)
     (config! (id :ns-lb) :model @all-ns-loaded-atom)
@@ -623,7 +656,7 @@
     ;; doc
     (config! (id :doc-tf) :text "")
     (config! (id :doc-ta) :text "                                                                                            ")
-    (selection! (id :ns-cbx) "loaded")
+    (selection! (id :ns-cbx) "clj-loaded")
     (selection! (id :vars-cbx) "Vars - public")
     (selection! (id :doc-lb) "Doc")))
 
@@ -657,7 +690,7 @@
          (update-vars-search-doc-also (id :vars-search-doc-also-cb)
                                       (:vars-search-doc-also settings))
          ))
-     (selection! (id :ns-cbx) "loaded")
+     (selection! (id :ns-cbx) "clj-loaded")
      (selection! (id :vars-cbx) "Vars - public")
      (selection! (id :doc-lb) "Doc"))))
 
@@ -722,9 +755,11 @@
           (b/bind
             (b/transform (fn [ns-list]
               (let [ns-str (and ns-list (first ns-list))]
-                (if (and ns-str (find-ns (symbol ns-str)))
-                  (fqname ns-str)
-                  ""))))
+                (if (= (selection (id :ns-cbx)) "cljs-loaded")
+                  (str (or (and ns-str (cljs-ns/cljs-find-ns (symbol ns-str))) ""))
+                  (if (and ns-str (find-ns (symbol ns-str)))
+                    (fqname ns-str)
+                    "")))))
             (b/property (id :doc-tf) :text))))
     ;; require-btn pressed =>
     ;; (require ns), update (un-)loaded atoms, select loaded, select ns.
@@ -738,7 +773,7 @@
           (let [i (.indexOf (seq @all-ns-loaded-atom) n)]
             (if (pos? i)
               (do
-                (selection! (id :ns-cbx) "loaded")
+                (selection! (id :ns-cbx) "clj-loaded")
                 (selection! (id :ns-lb) n)
                 (scroll! (id :ns-lb) :to [:row i]))
               (alert (str "Hmmm... seems that namespace \"" n "\" cannot be required (?)"))))))))
@@ -768,7 +803,9 @@
                                                   (selection (id :ns-lb)))))
                                         (symbol v))]
                         (str n))
-                      (fqname (selection (id :ns-lb)) v))]
+                      (if (= (selection (id :ns-cbx)) "cljs-loaded")
+                        (str (selection (id :ns-lb)) "/" v)
+                        (fqname (selection (id :ns-lb)) v)))]
             (when (not= fqn "")
               ;; update fqn-history-list
               (let [l (seesaw.meta/get-meta root :fqn-history-list-atom)]
@@ -796,7 +833,7 @@
          ns-lb-refresh-atom])
       (b/transform (fn [o]
         (let [v (selection (id :ns-cbx))]
-          (when (= v "unloaded") (config! (id :doc-tf) :text "")(config! (id :doc-ta) :text ""))
+          (when (= v "clj-unloaded") (config! (id :doc-tf) :text "")(config! (id :doc-ta) :text ""))
           ((get ns-cbx-value-fn-map v)))))
       (b/transform regx-tf-filter (id :ns-filter-tf) (atom false))
       (b/filter (fn [l]  ;; only refresh if the list really has changed
@@ -823,10 +860,14 @@
          (id :vars-fqn-listing-cb-atom)])
       (b/transform (fn [o]
         (let [ns-list (selection (id :ns-lb) {:multi? true})
-              n (and ns-list (map #(find-ns (symbol %)) ns-list))
+              n (if (= (selection (id :ns-cbx)) "cljs-loaded")
+                  (and ns-list (map #(cljs-ns/cljs-find-ns (symbol %)) ns-list))
+                  (and ns-list (map #(find-ns (symbol %)) ns-list)))
               always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)
               v (selection (id :vars-cbx))
-              f (get vars-cbx-value-fn-map v)]
+              f (if (= (selection (id :ns-cbx)) "cljs-loaded")
+                  (get cljs-vars-cbx-value-fn-map v)
+                  (get vars-cbx-value-fn-map v))]
           (if n
             (f n (or always-display-fqn? (> (count n) 1))
                @vars-search-doc-also-cb-atom)
@@ -888,7 +929,7 @@
       (b/transform
         (fn [[doc-tf doc-lb]]
           (future
-            (let [s (render-doc-text doc-tf doc-lb)]
+            (let [s (render-doc-text doc-tf doc-lb (= (selection (id :ns-cbx)) "cljs-loaded"))]
               (when-not (= s (config (id :doc-ta) :text))
                 (invoke-soon (config! (id :doc-ta) :text s))))))))
     ;;
@@ -1307,7 +1348,7 @@
           (if ns1
             ;; we have a fq-var as a-ns/a-name
             (invoke-soon
-              (selection! (id :ns-cbx) "loaded")
+              (selection! (id :ns-cbx) "clj-loaded")
               (selection! (id :vars-cbx) "Vars - all")
               (selection! (id :ns-lb) ns1)
               (invoke-later 
@@ -1328,7 +1369,7 @@
               (invoke-soon
                 (if (special-form? fqn)
                   (do
-                    (selection! (id :ns-cbx) "loaded")
+                    (selection! (id :ns-cbx) "clj-loaded")
                     (selection! (id :ns-lb) (str *ns*))
                     (selection! (id :vars-cbx) "Special-Forms")
                     (selection! (id :vars-lb) name1))

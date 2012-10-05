@@ -95,7 +95,7 @@ public class BrowserForm extends JPanel {
 		
 		JComboBox comboBox_1 = new JComboBox();
 		comboBox_1.setName("ns-cbx");
-		comboBox_1.setModel(new DefaultComboBoxModel(new String[] {"loaded", "unloaded"}));
+		comboBox_1.setModel(new DefaultComboBoxModel(new String[] {"clj-loaded", "cljs-loaded", "clj-unloaded"}));
 		add(comboBox_1, "cell 1 1");
 		
 		JComboBox comboBox = new JComboBox();

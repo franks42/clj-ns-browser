@@ -9,6 +9,8 @@
 (ns clj-ns-browser.utils
   (:require [clojure.set]
             [cd-client.core]
+            [cljs-ns]
+            [cljs-doc]
             [clojure.java.shell]
             [clojure.java.io]
             [clojure.string :as str]
@@ -353,6 +355,52 @@
              (mapcat (fn [a-ns] (map g (f a-ns)))
                      ns-coll))))))
 
+(defn cljs-symbols-of-ns-coll [ns-action f ns-coll display-fqn? search-doc-strings?]
+  (when-not (or (nil? ns-coll) (empty? ns-coll) (nil? (first ns-coll)))
+    (let [g (case ns-action
+              (:aliases :special-forms) (fn [[k v]]
+                                          {:symbol k
+                                           :rough-category ns-action
+                                           :var-class-or-ns v
+                                           :doc-string nil ; TBD: Fill this in
+                                           :fqn-sym k
+                                           :fqn-str (str k)
+                                           :display-sym k
+                                           :display-str (str k)
+                                           :name-to-search (str k)})
+              :ns-map-subset (fn [[sym var-or-class]]
+                               (let [fqn-str-or-nil var-or-class ;;(fqname var-or-class)
+                                     fqn-sym (when fqn-str-or-nil (symbol fqn-str-or-nil))
+  ;;                                             (when (instance? clojure.lang.Var
+  ;;                                                             var-or-class)
+  ;;                                              ;; TBD: There is probably
+  ;;                                              ;; a faster way to do
+  ;;                                              ;; this.
+  ;;                                              (symbol (str (.ns var-or-class))
+  ;;                                                      (str sym)))
+                                     ds (if (and display-fqn? fqn-sym)
+                                          fqn-sym
+                                          sym)]
+                               {:symbol sym
+                                :rough-category ns-action
+                                :var-class-or-ns var-or-class
+                                :doc-string (when search-doc-strings?
+                                              (:doc {:doc "this is where the ns-doc is searched"}))
+                                :fqn-sym fqn-sym
+                                :fqn-str (if fqn-sym
+                                           (str fqn-sym)
+                                           (str sym))
+                                :display-sym ds
+                                :display-str (str ds)
+                                :name-to-search (str ds)})))]
+      (set (if (and (= ns-action :aliases)
+                    (> (count ns-coll) 1))
+             [ {:name-to-search ""
+                :rough-category :msg-to-user
+                :display-str "select only one ns for aliases" } ]
+             (mapcat (fn [a-ns] (map g (f a-ns)))
+                     ns-coll))))))
+
 
 (defn filter-key [keyfn pred amap]
   (loop [ret {} es (seq amap)]
@@ -681,15 +729,19 @@
 
 (defn render-one-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
-  [fqn doc-opt]
+  [fqn doc-opt is-cljs?]
   (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt))
-    (let [is-ns? (find-ns (symbol fqn))]
+    (let [is-ns? (if is-cljs? 
+                   (cljs-ns/cljs-find-ns (symbol fqn))
+                   (find-ns (symbol fqn)))]
       (case doc-opt
         "Doc"
         (let [m (if (= fqn "clojure.core//")
                   {:title "clojure.core//   -   Function",
                    :message (with-out-str (clojure.repl/doc clojure.core//))}
-                  (doc2txt fqn))
+                  (if is-cljs?
+                    (cljs-doc/doc2txt fqn)
+                    (doc2txt fqn)))
               ;;m (doc2txt (str (selection ns-lb) "/" s))
               ;;m-html (doc2html (str (selection ns-lb) "/" s))
               txt (str (:title m) \newline (:message m))]
@@ -698,10 +750,14 @@
         "Source"
         (if is-ns?
           (str "Select individual symbols in the namespace to see source")
-          (if-let [source-str (try (clojure.repl/source-fn (fqname-symbol fqn))
-                                   (catch Exception e))]
-            source-str
-            (str "Sorry - no source code available for " fqn)))
+          (if is-cljs?
+            (if-let [source-str (cljs-ns/cljs-source-fn fqn)]
+              source-str
+              (str "Sorry - no source code available for " fqn))
+            (if-let [source-str (try (clojure.repl/source-fn (fqname-symbol fqn))
+                                     (catch Exception e))]
+              source-str
+              (str "Sorry - no source code available for " fqn))))
 
         "Examples" (render-clojuredocs-text fqn :examples is-ns?)
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
@@ -719,11 +775,13 @@
 
 (defn render-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
-  [fqn doc-opt-lst]
+  [fqn doc-opt-lst is-cljs?]
   (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt-lst))
-    (let [is-ns? (find-ns (symbol fqn))]
+    (let [is-ns? (if is-cljs? 
+                   (cljs-ns/cljs-find-ns (symbol fqn)) 
+                   (find-ns (symbol fqn)))]
       (if (= 1 (count doc-opt-lst))
-        (render-one-doc-text fqn (first doc-opt-lst))
+        (render-one-doc-text fqn (first doc-opt-lst) is-cljs?)
         (let [headings {"Doc" ""
                         "Source" "SOURCE:"
                         "Examples" "EXAMPLES:"
@@ -734,7 +792,7 @@
               doc-lst (->> doc-opt-lst
                            (map (fn [doc-opt]
                                   {:doc-opt doc-opt
-                                   :doc (str/trim-newline (render-one-doc-text fqn doc-opt))
+                                   :doc (str/trim-newline (render-one-doc-text fqn doc-opt is-cljs?))
                                    :heading (headings doc-opt)}))
                            (remove #(or (nil? (:doc %)) (str/blank? (:doc %))))
                            (map #(if (str/blank? (:heading %))
