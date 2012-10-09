@@ -9,8 +9,8 @@
 (ns clj-ns-browser.utils
   (:require [clojure.set]
             [cd-client.core]
-            [cljs-ns]
-            [cljs-doc]
+            [cljs-info.ns]
+            [cljs-info.doc2txt]
             [clojure.java.shell]
             [clojure.java.io]
             [clojure.string :as str]
@@ -732,7 +732,7 @@
   [fqn doc-opt is-cljs?]
   (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt))
     (let [is-ns? (if is-cljs? 
-                   (cljs-ns/cljs-find-ns (symbol fqn))
+                   (cljs-info.ns/cljs-find-ns (symbol fqn))
                    (find-ns (symbol fqn)))]
       (case doc-opt
         "Doc"
@@ -740,7 +740,7 @@
                   {:title "clojure.core//   -   Function",
                    :message (with-out-str (clojure.repl/doc clojure.core//))}
                   (if is-cljs?
-                    (cljs-doc/doc2txt fqn)
+                    (cljs-info.doc2txt/doc2txt fqn)
                     (doc2txt fqn)))
               ;;m (doc2txt (str (selection ns-lb) "/" s))
               ;;m-html (doc2html (str (selection ns-lb) "/" s))
@@ -751,7 +751,7 @@
         (if is-ns?
           (str "Select individual symbols in the namespace to see source")
           (if is-cljs?
-            (if-let [source-str (cljs-ns/cljs-source-fn fqn)]
+            (if-let [source-str (cljs-info.ns/cljs-source-fn fqn)]
               source-str
               (str "Sorry - no source code available for " fqn))
             (if-let [source-str (try (clojure.repl/source-fn (fqname-symbol fqn))
@@ -778,7 +778,7 @@
   [fqn doc-opt-lst is-cljs?]
   (when-not (or (nil? fqn) (= fqn "") (nil? doc-opt-lst))
     (let [is-ns? (if is-cljs? 
-                   (cljs-ns/cljs-find-ns (symbol fqn)) 
+                   (cljs-info.ns/cljs-find-ns (symbol fqn)) 
                    (find-ns (symbol fqn)))]
       (if (= 1 (count doc-opt-lst))
         (render-one-doc-text fqn (first doc-opt-lst) is-cljs?)

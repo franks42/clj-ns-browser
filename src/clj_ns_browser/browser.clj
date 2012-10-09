@@ -25,7 +25,7 @@
             [clojure.java.javadoc]
             [cd-client.core]
             [clojure.tools.trace]
-            [cljs-ns])
+            [cljs-info.ns])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
         [seesaw.border]
@@ -153,7 +153,7 @@
 
 (def ns-cbx-value-list ["clj-loaded" "cljs-loaded" "clj-unloaded"])
 (def ns-cbx-value-fn-map {  "clj-loaded"    all-ns-loaded
-                            "cljs-loaded"   cljs-ns/cljs-all-ns-str
+                            "cljs-loaded"   cljs-info.ns/cljs-all-ns-str
                             "clj-unloaded"  all-ns-unloaded})
 (def vars-cbx-value-list [
   "Vars - all"
@@ -182,24 +182,24 @@
 
 (def cljs-vars-cbx-value-fn-map
   {
-;;    "Aliases"             (cljs-sonc :aliases cljs-ns/cljs-ns-aliases)
-;;    "Classes - all"       (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-imports)
-   "Vars - all"          (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns)
-   "All"                 (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-map)
-;;    "Classes - deftype"   (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-map-deftype)
-;;    "Classes - defrecord" (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-map-defrecord)
-   "Vars - public"       (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-publics)
-;;    "Vars - macro"        (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-macro)
-;;    "Vars - defn"         (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-defn)
-;;    "Vars - protocol"     (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-protocol)
-;;    "Vars - protocol-fn"  (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-protocol-fn)
-;;    "Vars - multimethod"  (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-var-multimethod)
-;;    "Vars - dynamic"      (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-var-dynamic)
-;;    "Vars - traced"       (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-interns-var-traced)
-   "Vars - private"      (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-privates)
-   "Refers - all"        (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-refers)
-   "Refers w/o core"     (cljs-sonc :ns-map-subset cljs-ns/cljs-ns-refers-wo-core)
-;;    "Special-Forms"       (cljs-sonc :special-forms cljs-ns/cljs-ns-special-forms)
+;;    "Aliases"             (cljs-sonc :aliases cljs-info.ns/cljs-ns-aliases)
+;;    "Classes - all"       (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-imports)
+   "Vars - all"          (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns)
+   "All"                 (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-map)
+;;    "Classes - deftype"   (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-map-deftype)
+;;    "Classes - defrecord" (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-map-defrecord)
+   "Vars - public"       (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-publics)
+;;    "Vars - macro"        (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-macro)
+;;    "Vars - defn"         (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-defn)
+;;    "Vars - protocol"     (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-protocol)
+;;    "Vars - protocol-fn"  (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-protocol-fn)
+;;    "Vars - multimethod"  (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-var-multimethod)
+;;    "Vars - dynamic"      (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-var-dynamic)
+;;    "Vars - traced"       (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-interns-var-traced)
+   "Vars - private"      (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-privates)
+   "Refers - all"        (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-refers)
+   "Refers w/o core"     (cljs-sonc :ns-map-subset cljs-info.ns/cljs-ns-refers-wo-core)
+;;    "Special-Forms"       (cljs-sonc :special-forms cljs-info.ns/cljs-ns-special-forms)
    })
 
 (defn sonc [ns-action f]
@@ -257,7 +257,7 @@
 (defn ns-unloaded [] @all-ns-unloaded-atom)
 (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
 (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
-(swap! all-cljs-ns-loaded-atom (fn [& a] (cljs-ns/cljs-all-ns-str)))
+(swap! all-cljs-ns-loaded-atom (fn [& a] (cljs-info.ns/cljs-all-ns-str)))
 (def group-vars-by-object-type-atom (atom false))
 (def vars-search-doc-also-cb-atom (atom false))
 (def ns-lb-refresh-atom (atom true))
@@ -619,7 +619,7 @@
     (seesaw.meta/put-meta! root :fqn-history-list-atom (atom []))
     (swap! all-ns-unloaded-atom (fn [& a] (all-ns-unloaded)))
     (swap! all-ns-loaded-atom (fn [& a] (all-ns-loaded)))
-    (swap! all-cljs-ns-loaded-atom (fn [& a] (cljs-ns/cljs-all-ns-str)))
+    (swap! all-cljs-ns-loaded-atom (fn [& a] (cljs-info.ns/cljs-all-ns-str)))
     (config! (id :vars-lb-sp) :preferred-size (config (id :vars-lb-sp) :size))
     (config! (id :vars-cbx) :model vars-cbx-value-list)
     (config! (id :ns-lb) :model @all-ns-loaded-atom)
@@ -756,7 +756,7 @@
             (b/transform (fn [ns-list]
               (let [ns-str (and ns-list (first ns-list))]
                 (if (= (selection (id :ns-cbx)) "cljs-loaded")
-                  (str (or (and ns-str (cljs-ns/cljs-find-ns (symbol ns-str))) ""))
+                  (str (or (and ns-str (cljs-info.ns/cljs-find-ns (symbol ns-str))) ""))
                   (if (and ns-str (find-ns (symbol ns-str)))
                     (fqname ns-str)
                     "")))))
@@ -861,7 +861,7 @@
       (b/transform (fn [o]
         (let [ns-list (selection (id :ns-lb) {:multi? true})
               n (if (= (selection (id :ns-cbx)) "cljs-loaded")
-                  (and ns-list (map #(cljs-ns/cljs-find-ns (symbol %)) ns-list))
+                  (and ns-list (map #(cljs-info.ns/cljs-find-ns (symbol %)) ns-list))
                   (and ns-list (map #(find-ns (symbol %)) ns-list)))
               always-display-fqn? (config (id :vars-fqn-listing-cb-action) :selected?)
               v (selection (id :vars-cbx))

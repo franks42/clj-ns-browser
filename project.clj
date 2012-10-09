@@ -12,7 +12,8 @@
                  [org.thnetos/cd-client "0.3.5"]
                  [hiccup "1.0.1"]
                  [clj-info "0.2.6"]
-                 [org.clojure/clojurescript "0.0-1492"
+                 [cljs-info "1.0.0-SNAPSHOT"]
+                 [org.clojure/clojurescript "0.0-1502"
                   :exclusions [org.apache.ant/ant]]
                  ]
  	:dev-dependencies [[lein-marginalia "0.7.1"]
