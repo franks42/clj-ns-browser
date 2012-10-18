@@ -10,6 +10,8 @@
   (:require [clojure.set]
             [cd-client.core]
             [cljs-info.ns]
+            [cljs-info.utils]
+            [cljs-info.repl]
             [cljs-info.doc2txt]
             [clojure.java.shell]
             [clojure.java.io]
@@ -727,6 +729,19 @@
             )))))
 
 
+(defn cljs-render-fqn-value
+  ""
+  [fqn]
+  (let [fqn-str (cljs-info.utils/cljs-fqname fqn)
+        fqn-sym# (cljs-info.utils/cljs-fqname-sym fqn)
+        js-str (str "(cljs-info.repl/cljs->repl* (quote (if (fn? "fqn-str") (str " fqn-str ") (js->clj " fqn-str "))))")
+        v-s (eval (read-string js-str))
+        v-s-s (read-string v-s)
+        v-r-s (pprint-str v-s-s)
+        ]
+      (str "VALUE: \n" (if (string? v-s-s) (print-str (read-string v-r-s)) v-r-s))))
+
+
 (defn render-one-doc-text
   "Given a FQN, return the doc or source code as string, based on options."
   [fqn doc-opt is-cljs?]
@@ -762,7 +777,7 @@
         "Examples" (render-clojuredocs-text fqn :examples is-ns?)
         "Comments" (render-clojuredocs-text fqn :comments is-ns?)
         "See alsos" (render-clojuredocs-text fqn :see-alsos is-ns?)
-        "Value" (render-fqn-value fqn)
+        "Value" (if is-cljs? (cljs-render-fqn-value fqn) (render-fqn-value fqn))
         "Meta" (let [s (render-meta fqn)]
                  (str 
                    (if s (str "META:\n" s) "")

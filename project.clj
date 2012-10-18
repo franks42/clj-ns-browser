@@ -11,9 +11,9 @@
                  [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
                  [org.thnetos/cd-client "0.3.6"]
                  [hiccup "1.0.1"]
-                 [clj-info "0.3.0"]
-                 [cljs-info "1.0.0-SNAPSHOT"]
-                 [org.clojure/clojurescript "0.0-1505"
+                 [clj-info "0.3.1"]
+                 [cljs-info "1.0.0"]
+                 [org.clojure/clojurescript "0.0-1503"
                   :exclusions [org.apache.ant/ant]]
                  ]
  	:dev-dependencies [[lein-marginalia "0.7.1"]

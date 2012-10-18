@@ -95,17 +95,17 @@
     <dependency>
       <groupId>clj-info</groupId>
       <artifactId>clj-info</artifactId>
-      <version>0.3.0</version>
+      <version>0.3.1</version>
     </dependency>
     <dependency>
       <groupId>cljs-info</groupId>
       <artifactId>cljs-info</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>1.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojurescript</artifactId>
-      <version>0.0-1505</version>
+      <version>0.0-1503</version>
       <exclusions>
         <exclusion>
           <artifactId>ant</artifactId>
