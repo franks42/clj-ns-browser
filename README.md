@@ -1,18 +1,16 @@
 # Clojure Namespace Browser (clj-ns-browser)
 
-Clj-ns-browser is a namespace/class/var browser for Clojure's doc strings, source code, ClojureDocs.org examples & comments, and values.  The browser's GUI is inspired by Smalltalk class library browsers, and is based on the Seesaw library.
+Clj-ns-browser is a graphical namespace/class/var browser for Clojure's doc strings, source code, ClojureDocs.org examples & comments, and values.  The browser's GUI is inspired by Smalltalk class library browsers, and is based on the Seesaw library.
 
-Look for the last released version on clojars.org: [clj-ns-browser "1.3.0"].
+Look for the last released version on clojars.org: [clj-ns-browser "1.3.1"].
 
 ![Clojure Namespace Browser](https://github.com/franks42/clj-ns-browser/raw/master/clj-ns-browser.png "Clojure Namespace Browser")
 
 ## Introduction
 
-The "cool button-row widget" release, "1.3.0", adds a few new features to clj-ns-browser compared to the  "1.2.0" release that is already a few months old. 
+The 1.3.1 release upgrades the dependencies to clojure 1.5, and seesaw 1.4.3, but works fine with clojure 1.4 also.
 
-A few of the highlights of the new browser's feature set are:
-
-* upgraded dependencies to latest&greatest (clojure 1.4, seesaw 1.4.2, etc.)
+A few of the highlights of the  browser's feature set are:
 
 * Andy concocted a cool, new, button-row widget that allows for flexible display of var/class/namespace information.
 
@@ -69,10 +67,10 @@ For any project where you want to add the ability to browse your currently loade
 
 ```
     ;; Leiningen version 1
-    :dev-dependencies [[clj-ns-browser "1.3.0"]]
+    :dev-dependencies [[clj-ns-browser "1.3.1"]]
 
     ;; Leiningen version 2
-    :profiles {:dev {:dependencies [[clj-ns-browser "1.3.0"]]}}
+    :profiles {:dev {:dependencies [[clj-ns-browser "1.3.1"]]}}
 ```
 
 Then fire-up your repl, refer to the sdoc macro in clj-ns-browser.sdoc, and start the browser with (sdoc):
@@ -84,7 +82,7 @@ Then fire-up your repl, refer to the sdoc macro in clj-ns-browser.sdoc, and star
 
 ... and the browser window should popup on your screen - very easy!
 
-It should actually work from any repl - tested on MacOSX, Linux, even Windows... with Leiningen 1.7.1 & 2.0.0-preview10, repls, repl-y, emacs and Sublime Text 2.
+It should actually work from any repl - tested on MacOSX, Linux, even Windows... with Leiningen 1.7.1 & 2.0.0, repls, repl-y, emacs and Sublime Text 2.
 
 
 ## Documentation, Usage, Issues, Futures...
@@ -109,7 +107,7 @@ All the open source libraries that the clj-ns-browser depends on, like: seesaw, 
 
 ## License
 
-Copyright (C) 2012 - Frank Siebenlist and Andy Fingerhut
+Copyright (C) 2013 - Frank Siebenlist and Andy Fingerhut
 
 Distributed under the Eclipse Public License, the same as Clojure
 uses. See the file COPYING.
