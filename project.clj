@@ -1,4 +1,4 @@
-(defproject clj-ns-browser "1.3.1"
+(defproject clj-ns-browser "1.3.2-SNAPSHOT"
   :description "Smalltalk-like namespace/class/var/function browser for Clojure."
   :url "https://github.com/franks42/clj-ns-browser"
   :license {:name "Eclipse Public License"
