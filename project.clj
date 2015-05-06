@@ -3,13 +3,13 @@
   :url "https://github.com/franks42/clj-ns-browser"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.0"]
-                 [seesaw "1.4.3"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
+                 [seesaw "1.4.5"]
                  [org.clojure/tools.namespace "0.1.3"]
-                 [org.clojure/tools.trace "0.7.3"]
-                 [clojure-complete "0.2.1" :exclusions [org.clojure/clojure]]
+                 [org.clojure/tools.trace "0.7.8"]
+                 [clojure-complete "0.2.3" :exclusions [org.clojure/clojure]]
                  [org.thnetos/cd-client "0.3.6"]
-                 [hiccup "1.0.2"]
+                 [hiccup "1.0.5"]
                  [clj-info "0.3.1"]
                  ]
  	:dev-dependencies [[lein-marginalia "0.7.1"]
@@ -22,4 +22,5 @@
   :resources-path "resource"
   ;; Use this for Leiningen version 2
   :resource-paths ["resource"]
-  :main clj-ns-browser.core)
+  ;:main clj-ns-browser.core
+  )
