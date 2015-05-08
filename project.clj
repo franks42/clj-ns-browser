@@ -7,7 +7,7 @@
                  [seesaw "1.4.5"]
                  [org.clojure/tools.namespace "0.1.3"]
                  [org.clojure/tools.trace "0.7.8"]
-                 [clojure-complete "0.2.3" :exclusions [org.clojure/clojure]]
+                 [clojure-complete "0.2.4" :exclusions [org.clojure/clojure]]
                  [org.thnetos/cd-client "0.3.6"]
                  [hiccup "1.0.5"]
                  [clj-info "0.3.1"]
