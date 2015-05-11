@@ -373,10 +373,19 @@
           :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://clojure.org")))))
 (add-app-action :go-clojuredocs-action
   (action :name "ClojureDocs..."
-          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://clojuredocs.org")))))
+          ;;:handler (fn [a] (future (clj-ns-browser.web/browse-url "http://clojuredocs.org")))))
+          :handler (fn [e] 
+            (let [id (partial select-id (to-root e))]
+              (let [fqn (config (id :doc-tf) :text)]
+                (if-let [fqn-name (fqname fqn)]
+                  (let [ns-n-class (ns-name-class-str fqn-name)
+                        sname (if (nil? (second ns-n-class)) (first ns-n-class)(second ns-n-class))
+                        nsname (first ns-n-class)]
+                    (future (clj-ns-browser.web/browse-url
+                      (str "http://clojuredocs.org/" nsname "/" sname))))))))))
 (add-app-action :go-cheatsheet-action
   (action :name "Clojure CheatSheet..."
-          :handler (fn [a] (future (clj-ns-browser.web/browse-url "http://jafingerhut.github.com/cheatsheet-clj-1.3/cheatsheet-tiptip-no-cdocs-summary.html")))))
+          :handler (fn [a] (future (clj-ns-browser.web/browse-url "https://jafingerhut.github.io/cheatsheet/clojuredocs/cheatsheet-tiptip-no-cdocs-summary.html")))))
 (add-app-action :go-jira-action
   (action :name "JIRA..."
           :handler (fn [a] (future (clj-ns-browser.web/browse-url

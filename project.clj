@@ -16,10 +16,7 @@
  	                   ;[franks42/debug-repl "0.3.1-FS"]
                      [codox "0.6.4"]]
   :jvm-opts ~(if (= (System/getProperty "os.name") "Mac OS X") ["-Xdock:name=Clj-NS-Browser"] [])
-  :java-source-paths ["src"]
-  :java-source-path "src"
-  ;; Use this for Leiningen version 1
-  :resources-path "resource"
+  :java-source-paths ["src-java"]
   ;; Use this for Leiningen version 2
   :resource-paths ["resource"]
   ;:main clj-ns-browser.core
