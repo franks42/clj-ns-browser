@@ -49,7 +49,7 @@
   "
   ([] (sdoc* "sdoc"))
   ([a-name]
-  (cond (string? a-name) `(sdoc* ~a-name)
-        (symbol? a-name) `(sdoc* ~(str a-name))
-        (= (type a-name) clojure.lang.Cons) `(sdoc* ~(str (second a-name))))))
+   (cond (string? a-name) `(sdoc* ~a-name)
+         (symbol? a-name) `(sdoc* ~(str a-name))
+         (= (type a-name) clojure.lang.Cons) `(sdoc* ~(str (second a-name))))))
 

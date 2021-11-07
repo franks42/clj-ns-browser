@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>clj-ns-browser</groupId>
+  <groupId>org.clojars.bel</groupId>
   <artifactId>clj-ns-browser</artifactId>
   <packaging>jar</packaging>
-  <version>1.3.2-SNAPSHOT</version>
+  <version>1.3.4</version>
   <name>clj-ns-browser</name>
-  <description>Smalltalk-like namespace/class/var/function browser for Clojure.</description>
+  <description>Smalltalk-like namespace/class/var/function browser for Clojure. (I added javax.xml.bind/jaxb-api to make it work with Java 11)</description>
   <url>https://github.com/franks42/clj-ns-browser</url>
   <licenses>
     <license>
@@ -14,11 +14,10 @@
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>c481a1426b2f928e89366a4c7a0eec58cd35b10c
-</tag>
-    <url>https://github.com/franks42/clj-ns-browser</url>
+    <url>https://github.com/bennoloeffler/clj-ns-browser</url>
+    <connection>scm:git:git://github.com/bennoloeffler/clj-ns-browser.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/bennoloeffler/clj-ns-browser.git</developerConnection>
+    <tag>c5fc570f9c8aeb6dd1cc9383fcf32bdaa9b936e3</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -29,9 +28,6 @@
       </resource>
     </resources>
     <testResources>
-      <testResource>
-        <directory>dev-resources</directory>
-      </testResource>
       <testResource>
         <directory>resource</directory>
       </testResource>
@@ -73,7 +69,7 @@
     </repository>
     <repository>
       <id>clojars</id>
-      <url>https://clojars.org/repo/</url>
+      <url>https://repo.clojars.org/</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
@@ -82,38 +78,50 @@
       </releases>
     </repository>
   </repositories>
+  <dependencyManagement>
+    <dependencies/>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.6.0</version>
+      <version>1.10.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.formdev</groupId>
+      <artifactId>flatlaf</artifactId>
+      <version>1.6.1</version>
     </dependency>
     <dependency>
       <groupId>seesaw</groupId>
       <artifactId>seesaw</artifactId>
-      <version>1.4.5</version>
+      <version>1.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.4.0-b180830.0359</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>tools.namespace</artifactId>
-      <version>0.1.3</version>
+      <version>1.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>tools.trace</artifactId>
-      <version>0.7.8</version>
+      <version>0.7.11</version>
     </dependency>
     <dependency>
       <groupId>clojure-complete</groupId>
       <artifactId>clojure-complete</artifactId>
-      <version>0.2.3</version>
+      <version>0.2.5</version>
       <exclusions>
         <exclusion>
-          <groupId>org.clojure</groupId>
           <artifactId>clojure</artifactId>
+          <groupId>org.clojure</groupId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.thnetos</groupId>
@@ -129,18 +137,6 @@
       <groupId>clj-info</groupId>
       <artifactId>clj-info</artifactId>
       <version>0.3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>tools.nrepl</artifactId>
-      <version>0.2.6</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.clojure</groupId>
-          <artifactId>clojure</artifactId>
-        </exclusion>
-      </exclusions>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
