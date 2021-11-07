@@ -30,7 +30,8 @@
         [seesaw.border]
         [seesaw.mig]
         [seesaw.dev]
-        [clj-info]))
+        [clj-info])
+  (:import (com.formdev.flatlaf FlatDarkLaf)))
         ;;[alex-and-georges.debug-repl]))
 
 
@@ -61,7 +62,8 @@
 (declare auto-refresh-browser-handler)
 
 ;; seesaw docs say to call this early
-(native!)
+;(native!)
+(FlatDarkLaf/install) ;make hdpi displays work
 
 
 ;; convenience functions for seesaw interaction
