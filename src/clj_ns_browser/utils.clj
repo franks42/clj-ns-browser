@@ -282,7 +282,8 @@
      (var-traced? (ns-resolve ns s)))
   ([v]
     (let [vv (or (and (var? v) v) (and (symbol? v) (resolve v)))]
-       (and (var? vv) (meta vv) ((meta vv) ::clojure.tools.trace/traced)))))
+       ;; (and (var? vv) (meta vv) ((meta vv) ::clojure.tools.trace/traced)))))
+       (and (var? vv) (meta vv) ((meta vv) (clojure.tools.trace/traced? vv))))))
 
 
 ;; should move to clj-info
@@ -541,18 +542,69 @@
                       lines)]
     (str/join "\n" lines)))
 
+;; (defn clojuredocs-text
+;;   [ns-str name-str info-type]
+;;   (case info-type
+;;     :examples (clean-cd-client-examples
+;;                (with-out-str
+;;                  (cd-client.core/pr-examples-core ns-str name-str)))
+;;     :see-alsos (clean-cd-client-see-alsos
+;;                 (with-out-str
+;;                   (cd-client.core/pr-see-also-core ns-str name-str)))
+;;     :comments (clean-cd-client-comments
+;;                (with-out-str
+;;                  (cd-client.core/pr-comments-core ns-str name-str)))))
+
+
+(comment
+  ;;
+
+  (def cljdocs-export-edn-url "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/refs/heads/master/exports/export.compact.min.edn")
+  (def r (clj-http.lite.client/get cljdocs-export-edn-url))
+  (def cljdocs-export
+    (if (= (:status r) 200)
+      (clojure.edn/read-string (:body r))
+      nil))
+
+  (def a (slurp "cljdocs-export.edn"))
+  (def b (clojure.edn/read-string a))
+  (def c (:vars b))
+
+
+  ;;
+  )
+
+(def cljdocs-export-edn-url "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/refs/heads/master/exports/export.compact.min.edn")
+(defonce cljdocs-export
+  (let [r (clj-http.lite.client/get cljdocs-export-edn-url)]
+    (if (= (:status r) 200)
+      (clojure.edn/read-string (:body r))
+      {})))
+
+
+
 (defn clojuredocs-text
   [ns-str name-str info-type]
-  (case info-type
-    :examples (clean-cd-client-examples
-               (with-out-str
-                 (cd-client.core/pr-examples-core ns-str name-str)))
-    :see-alsos (clean-cd-client-see-alsos
-                (with-out-str
-                  (cd-client.core/pr-see-also-core ns-str name-str)))
-    :comments (clean-cd-client-comments
-               (with-out-str
-                 (cd-client.core/pr-comments-core ns-str name-str)))))
+  (let [fqn (keyword (str ns-str "/" name-str))]
+    (if-let [fqn-entry (fqn cljdocs-export)]
+      (case info-type
+        :examples
+        (if-let [examples (:examples fqn-entry)]
+          (apply str examples)
+          "No Examples")
+        :see-alsos
+        (if-let [see-alsos (:see-alsos fqn-entry)]
+          (with-out-str
+            (doseq [see-also see-alsos]
+              (println (clojure.string/replace see-also ":" ""))))
+          "No See Also's")
+        :comments
+        (if-let [notes (:notes fqn-entry)]
+          (with-out-str
+            (doseq [note notes]
+              (println note)))
+          "No Comments/Notes"))
+      (str "No ClojureDocs entry for FQN: '" fqn "'"))))
 
 
 (defn render-clojuredocs-text
@@ -661,8 +713,8 @@
                  "\n@TYPE: " (type @fqn-v)
                  "\n       " (clj-types-str @fqn-v)
                   \newline
-                 "\nVALUE: \n" (pprint-str fqn-v))
-                 ;;"\n  @Value: \n" (pprint-str @fqn-v))
+                 "\nVALUE: \n" (pprint-str fqn-v)
+                 "\n@Value: \n" (pprint-str @fqn-v))
           (class? fqn-v)
             (str "TYPE:  " (type fqn-v)
                  "\n       " (clj-types-str fqn-v)
@@ -743,12 +795,21 @@
           (str/join "\n\n\n" doc-lst))))))
 
 
+;; (defn clojuredocs-url
+;;   "Returns the clojuredoc url for given FQN"
+;;   [fqn]
+;;   (let [r (ns-name-class-str fqn)]
+;;     (when (and (first r) (second r))
+;;       (:url (cd-client.core/examples (first r) (second r))))))
+
 (defn clojuredocs-url
   "Returns the clojuredoc url for given FQN"
   [fqn]
   (let [r (ns-name-class-str fqn)]
-    (when (and (first r)(second r))
-      (:url (cd-client.core/examples (first r) (second r))))))
+    ;; (ns-name-class-str "clojure.core/map") => ["clojure.core" "map"]
+    (when (and (first r) (second r))
+      ;; https://clojuredocs.org/clojure.core/map
+      (str "https://clojuredocs.org/" (first r) "/" (second r)))))
 
 (defn meta-when-file
   "Returns the path to the source file for fqn,

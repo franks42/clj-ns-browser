@@ -2,13 +2,14 @@
 
 Clj-ns-browser is a graphical namespace/class/var browser for Clojure's doc strings, source code, ClojureDocs.org examples & comments, and values.  The browser's GUI is inspired by Smalltalk class library browsers, and is based on the Seesaw library.
 
-Look for the last released version on clojars.org: [clj-ns-browser "1.3.1"].
+Look for the last released version on clojars.org: [clj-ns-browser "2.0.0-SNAPSHOT"].
 
 ![Clojure Namespace Browser](https://github.com/franks42/clj-ns-browser/raw/master/clj-ns-browser.png "Clojure Namespace Browser")
 
 ## Introduction
 
-The 1.3.1 release upgrades the dependencies to clojure 1.5, and seesaw 1.4.3, but works fine with clojure 1.4 also.
+The 2.0.0-SNAPSHOT release upgrades the dependencies to clojure 1.12, and a latest on all others. Furthermore, it uses the ClojureDocs edn-file from "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/refs/heads/master/exports/export.compact.min.edn", which seems to be regularly updated.
+
 
 A few of the highlights of the  browser's feature set are:
 

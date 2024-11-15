@@ -49,7 +49,7 @@
 
 
 
-(def clj-ns-browser-version "1.3.2-SNAPSHOT")
+(def clj-ns-browser-version "2.0.0-SNAPSHOT")
 
 
 ;; forward declarations... ough that clojure compiler should be smarter...
