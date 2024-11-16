@@ -21,7 +21,7 @@
                  [clojure-complete "0.2.5" :exclusions [org.clojure/clojure]]
                  ;; [org.thnetos/cd-client "0.3.6"]
                  [hiccup "1.0.5"]
-                 [clj-info "0.3.2"]
+                 [clj-info "0.4.0-SNAPSHOT"]
                  ]
  	:dev-dependencies [
                      ;; [lein-marginalia "0.7.1"]

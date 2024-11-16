@@ -18,7 +18,7 @@
     <url>https://github.com/franks42/clj-ns-browser</url>
     <connection>scm:git:git://github.com/franks42/clj-ns-browser.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/franks42/clj-ns-browser.git</developerConnection>
-    <tag>d2d5288dec22d1b8b90aab9bb302656fe0c6c776</tag>
+    <tag>cb4041bf9162d589de84c84515d8221612a483d8</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -132,7 +132,7 @@
     <dependency>
       <groupId>clj-info</groupId>
       <artifactId>clj-info</artifactId>
-      <version>0.3.2</version>
+      <version>0.4.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>
