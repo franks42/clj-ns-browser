@@ -23,7 +23,7 @@
             [seesaw.meta]
             [seesaw.clipboard]
             [clojure.java.javadoc]
-            [cd-client.core]
+            ;; [cd-client.core]
             [clojure.tools.trace])
   (:use [clj-ns-browser.utils]
         [seesaw.core]
@@ -241,7 +241,8 @@
   (let [f (clojuredocs-snapshot-filename)]
     (if (.exists (io/as-file f))
       ;; TBD: Consider trying to handle errors while reading the file.
-      (let [s (with-out-str (cd-client.core/set-local-mode! f))]
+      ;; (let [s (with-out-str (cd-client.core/set-local-mode! f))]
+      (let [s (with-out-str "")]
         [:ok s])
       [:snapshot-file-not-found f])))
 
@@ -1033,7 +1034,8 @@
               :snapshot-file-not-found
               (do (alert "No locally cached ClojureDocs repo found - update first")
                   (config! (id :clojuredocs-online-rb) :selected? true))))
-          (let [s (with-out-str (cd-client.core/set-web-mode!))]
+          ;; (let [s (with-out-str (cd-client.core/set-web-mode!))]
+          (let [s (with-out-str "")]
             (alert (str "Note: Online ClojureDocs will be used" \newline s))))
         (update-settings! {:clojuredocs-online
                            (config (id :clojuredocs-online-rb) :selected?)}))))

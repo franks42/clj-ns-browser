@@ -8,11 +8,14 @@
 
 (ns clj-ns-browser.utils
   (:require [clojure.set]
-            [cd-client.core]
+            ;; [cd-client.core]
             [clojure.java.shell]
             [clojure.java.io]
             [clojure.string :as str]
             [clojure.tools.namespace]
+            ;; [clj-http.lite.client]
+            [babashka.http-client] 
+            [clojure.edn]
             [clojure.tools.trace])
   (:use [seesaw.core]
         [clojure.pprint :only [pprint]]
@@ -556,27 +559,9 @@
 ;;                  (cd-client.core/pr-comments-core ns-str name-str)))))
 
 
-(comment
-  ;;
-
-  (def cljdocs-export-edn-url "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/refs/heads/master/exports/export.compact.min.edn")
-  (def r (clj-http.lite.client/get cljdocs-export-edn-url))
-  (def cljdocs-export
-    (if (= (:status r) 200)
-      (clojure.edn/read-string (:body r))
-      nil))
-
-  (def a (slurp "cljdocs-export.edn"))
-  (def b (clojure.edn/read-string a))
-  (def c (:vars b))
-
-
-  ;;
-  )
-
 (def cljdocs-export-edn-url "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/refs/heads/master/exports/export.compact.min.edn")
 (defonce cljdocs-export
-  (let [r (clj-http.lite.client/get cljdocs-export-edn-url)]
+  (let [r (babashka.http-client/get cljdocs-export-edn-url)]
     (if (= (:status r) 200)
       (clojure.edn/read-string (:body r))
       {})))

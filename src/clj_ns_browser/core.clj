@@ -7,14 +7,14 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns clj-ns-browser.core
-  (:require [clj-ns-browser.sdoc]
-            [seesaw.core]
-            [seesaw.dev]
-            [clj-info]
-            [clojure.pprint :as pp]
-            [clj-ns-browser.browser])
+  (:require
+   [clj-ns-browser.sdoc]
+  ;;  [seesaw.core]
+  ;;  [seesaw.dev]
+  ;;  [clj-info]
+  ;;  [clojure.pprint :as pp]
+   [clj-ns-browser.browser])
   (:gen-class))
-;;        [alex-and-georges.debug-repl]))
 
 
 (defn -main [& args]
