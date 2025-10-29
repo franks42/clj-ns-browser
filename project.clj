@@ -1,4 +1,4 @@
-(defproject clj-ns-browser "2.0.0-SNAPSHOT"
+(defproject clj-ns-browser "2.0.0"
   :description "Smalltalk-like namespace/class/var/function browser for Clojure."
   :url "https://github.com/franks42/clj-ns-browser"
   :license {:name "Eclipse Public License"
@@ -10,7 +10,7 @@
                  ;; [clj-http "3.13.0"]
                  ;; [clj-http-lite "0.2.1"]
                  ;; [org.clj-commons/clj-http-lite "1.0.13"]
-                 [org.babashka/http-client "0.4.22"]
+                 ;; [org.babashka/http-client "0.4.22"] ;; Now provided by clj-info 0.6.0
                  ;; [seesaw "1.4.5"]
                  [seesaw "1.5.0"]
                  ;;[org.clojure/tools.namespace "0.1.3"]
@@ -20,8 +20,8 @@
                  ;; [clojure-complete "0.2.4" :exclusions [org.clojure/clojure]]
                  [clojure-complete "0.2.5" :exclusions [org.clojure/clojure]]
                  ;; [org.thnetos/cd-client "0.3.6"]
-                 [hiccup "1.0.5"]
-                 [clj-info "0.4.0-SNAPSHOT"]
+                 [hiccup "2.0.0"]
+                 [clj-info "0.6.0"]
                  ]
  	:dev-dependencies [
                      ;; [lein-marginalia "0.7.1"]

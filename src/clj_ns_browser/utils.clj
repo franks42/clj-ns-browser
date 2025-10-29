@@ -14,14 +14,15 @@
             [clojure.string :as str]
             [clojure.tools.namespace]
             ;; [clj-http.lite.client]
-            [babashka.http-client] 
+            ;; [babashka.http-client] ;; Now provided by clj-info 0.6.0
             [clojure.edn]
             [clojure.tools.trace])
   (:use [seesaw.core]
         [clojure.pprint :only [pprint]]
         [clj-info.doc2map :only [get-docs-map]]
         [clj-info.doc2txt :only [doc2txt]]
-        [clj-info.doc2html :only [doc2html]]))
+        [clj-info.doc2html :only [doc2html]]
+        [clj-info.clojuredocs :only [get-clojuredocs-content format-examples format-see-alsos format-notes]]))
         ;;[alex-and-georges.debug-repl]))
 
 
@@ -559,57 +560,26 @@
 ;;                  (cd-client.core/pr-comments-core ns-str name-str)))))
 
 
-(def cljdocs-export-edn-url "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/refs/heads/master/exports/export.compact.min.edn")
-(defonce cljdocs-export
-  (let [r (babashka.http-client/get cljdocs-export-edn-url)]
-    (if (= (:status r) 200)
-      (clojure.edn/read-string (:body r))
-      {})))
-
-
-
-(defn clojuredocs-text
-  [ns-str name-str info-type]
-  (let [fqn (keyword (str ns-str "/" name-str))]
-    (if-let [fqn-entry (fqn cljdocs-export)]
-      (case info-type
-        :examples
-        (if-let [examples (:examples fqn-entry)]
-          (apply str examples)
-          "No Examples")
-        :see-alsos
-        (if-let [see-alsos (:see-alsos fqn-entry)]
-          (with-out-str
-            (doseq [see-also see-alsos]
-              (println (clojure.string/replace see-also ":" ""))))
-          "No See Also's")
-        :comments
-        (if-let [notes (:notes fqn-entry)]
-          (with-out-str
-            (doseq [note notes]
-              (println note)))
-          "No Comments/Notes"))
-      (str "No ClojureDocs entry for FQN: '" fqn "'"))))
-
+;; ClojureDocs integration now provided by clj-info 0.6.0
 
 (defn render-clojuredocs-text
   "Obtain and return examples, see alsos, or comments as a string from
-  clojuredocs for fqn"
+  clojuredocs for fqn using clj-info 0.6.0 API"
   [real-fqn info-type is-ns?]
   (if is-ns?
     (str "Select individual symbols in the namespace to see " (name info-type))
     (let [fqn (if (some #(= % real-fqn) special-forms)
                 (str "clojure.core/" real-fqn)
-                real-fqn)
-          name-str (name (symbol fqn))
-          ns-str (namespace (symbol fqn))]
-      (if ns-str
-        (if-let [s (clojuredocs-text ns-str name-str info-type)]
-          (if (str/blank? s)
-            ""
-            (str/trim-newline s))
-          (str "Sorry no " (name info-type) " available from clojuredoc for: "
-               fqn))))))
+                real-fqn)]
+      (if-let [content (get-clojuredocs-content fqn info-type)]
+        (if (empty? content)
+          ""
+          (case info-type
+            :examples (format-examples content)
+            :see-alsos (format-see-alsos content)
+            :comments (format-notes content)
+            (str content)))
+        (str "Sorry no " (name info-type) " available from ClojureDocs for: " fqn)))))
 
 
 (def ^:dynamic *max-value-display-size* 2500)
