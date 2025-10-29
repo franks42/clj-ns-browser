@@ -3,6 +3,10 @@
   :url "https://github.com/franks42/clj-ns-browser"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :deploy-repositories [["clojars" {:url "https://repo.clojars.org/"
+                                    :username :env/CLOJARS_USERNAME
+                                    :password :env/CLOJARS_PASSWORD
+                                    :sign-releases false}]]
   :dependencies [
                  [javax.xml.bind/jaxb-api "2.4.0-b180830.0359"]
                  ;; [org.clojure/clojure "1.6.0"]
